@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+
+  body {
+    @apply bg-surface-primary text-text-primary;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: linear-gradient(135deg, theme('colors.surface.primary') 0%, theme('colors.surface.secondary') 100%);
+  }
+
+  #root {
+    min-height: 100vh;
+    @apply relative;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-surface-secondary;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-dark-600;
+  }
+}
+
+@layer components {
+  /* Premium Button Styles */
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary-500 to-accent-orange-500 hover:from-primary-400 hover:to-accent-orange-400
+           text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300
+           disabled:opacity-50 disabled:cursor-not-allowed shadow-premium hover:shadow-premium-lg
+           hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface-primary;
+  }
+
+  .btn-secondary {
+    @apply bg-surface-card hover:bg-surface-hover text-text-primary font-medium py-3 px-6 rounded-xl
+           transition-all duration-300 border border-border-primary hover:border-border-secondary
+           shadow-premium hover:shadow-premium-lg hover:-translate-y-0.5 active:translate-y-0;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-surface-hover text-text-secondary hover:text-text-primary
+           font-medium py-3 px-6 rounded-xl transition-all duration-300;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-500 text-white font-medium py-3 px-6 rounded-xl
+           transition-all duration-300 shadow-premium hover:shadow-premium-lg
+           hover:-translate-y-0.5 active:translate-y-0;
+  }
+
+  /* Input Styles */
+  .input-field {
+    @apply w-full px-4 py-3 bg-surface-card border border-border-primary rounded-xl
+           text-text-primary placeholder-text-muted
+           focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none
+           transition-all duration-200 shadow-premium;
+  }
+
+  /* Card Styles */
+  .card {
+    @apply bg-surface-card border border-border-primary rounded-2xl shadow-premium
+           backdrop-blur-sm;
+  }
+
+  .card-elevated {
+    @apply bg-surface-elevated border border-border-secondary rounded-2xl shadow-premium-lg
+           backdrop-blur-md;
+  }
+
+  /* Glass Effect */
+  .glass {
+    @apply bg-surface-card/80 backdrop-blur-md border border-border-primary/50;
+  }
+
+  /* Text Styles */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-400 to-accent-orange-400 bg-clip-text text-transparent;
+  }
+
+  /* Loading Animation */
+  .loading-pulse {
+    @apply animate-pulse bg-surface-hover rounded-lg;
+  }
+
+  /* Premium Focus Ring */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface-primary;
+  }
+
+  /* Hover Glow Effect */
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-glow;
+  }
+
+  /* Status Indicators */
+  .status-online {
+    @apply bg-accent-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)];
+  }
+
+  .status-offline {
+    @apply bg-dark-600;
+  }
+
+  .status-busy {
+    @apply bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)];
+  }
+}
