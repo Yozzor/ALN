@@ -9,6 +9,9 @@
     },
     "api/photos.js": {
       "runtime": "nodejs18.x"
+    },
+    "api/debug.js": {
+      "runtime": "nodejs18.x"
     }
   },
 
