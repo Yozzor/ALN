@@ -4,13 +4,13 @@
   "framework": "vite",
   "functions": {
     "pages/api/upload.js": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node@3.0.7"
     },
     "pages/api/photos.js": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node@3.0.7"
     },
     "pages/api/debug.js": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node@3.0.7"
     }
   },
 
