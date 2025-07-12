@@ -2,17 +2,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "functions": {
-    "pages/api/upload.js": {
-      "runtime": "@vercel/node@3.0.7"
-    },
-    "pages/api/photos.js": {
-      "runtime": "@vercel/node@3.0.7"
-    },
-    "pages/api/debug.js": {
-      "runtime": "@vercel/node@3.0.7"
-    }
-  },
 
 
 
