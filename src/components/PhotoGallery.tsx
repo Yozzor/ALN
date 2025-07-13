@@ -67,6 +67,31 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     }
   }, [selectedPhoto, photos])
 
+  const downloadPhoto = async (photo: Photo) => {
+    try {
+      // Fetch the image as blob
+      const response = await fetch(photo.url)
+      const blob = await response.blob()
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = photo.fileName || `photo-${photo.userName}-${new Date(photo.uploadedAt).toISOString().split('T')[0]}.jpg`
+
+      // Trigger download
+      document.body.appendChild(link)
+      link.click()
+
+      // Cleanup
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Failed to download photo:', error)
+      alert('Failed to download photo. Please try again.')
+    }
+  }
+
   const fetchPhotos = async () => {
     try {
       setLoading(true)
@@ -232,10 +257,32 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent
                                   opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                  {/* Click to expand indicator */}
+                  {/* Hover overlay with actions */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="bg-black/50 backdrop-blur-sm rounded-full p-3">
-                      <div className="w-6 h-6 bg-white rounded opacity-80"></div>
+                    <div className="flex gap-3">
+                      {/* View button */}
+                      <div className="bg-black/50 backdrop-blur-sm rounded-full p-3 hover:bg-black/70 transition-colors">
+                        <div className="w-5 h-5 bg-white rounded opacity-80"></div>
+                      </div>
+
+                      {/* Download button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          downloadPhoto(photo)
+                        }}
+                        className="bg-black/50 backdrop-blur-sm rounded-full p-3 hover:bg-black/70 transition-colors"
+                        title="Download photo"
+                      >
+                        <div className="w-5 h-5 relative">
+                          {/* Download icon */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-3 h-3 border-2 border-white border-t-0 border-l-0 rotate-45 translate-y-[-2px]"></div>
+                            <div className="absolute w-0.5 h-3 bg-white top-1"></div>
+                            <div className="absolute bottom-0 w-4 h-0.5 bg-white"></div>
+                          </div>
+                        </div>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -286,20 +333,40 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
           onClick={() => setSelectedPhoto(null)}
         >
           <div className="relative max-w-4xl max-h-full w-full h-full flex items-center justify-center">
-            {/* Close button */}
-            <button
-              onClick={() => setSelectedPhoto(null)}
-              className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full
-                         transition-all duration-300 hover:scale-110"
-              title="Close"
-            >
-              <div className="w-6 h-6 relative">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-4 h-0.5 bg-white rotate-45 absolute"></div>
-                  <div className="w-4 h-0.5 bg-white -rotate-45 absolute"></div>
+            {/* Top action buttons */}
+            <div className="absolute top-4 right-4 z-10 flex gap-3">
+              {/* Download button */}
+              <button
+                onClick={() => downloadPhoto(selectedPhoto)}
+                className="bg-black/50 hover:bg-black/70 text-white p-3 rounded-full
+                           transition-all duration-300 hover:scale-110"
+                title="Download photo"
+              >
+                <div className="w-6 h-6 relative">
+                  {/* Download icon */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-0 border-l-0 rotate-45 translate-y-[-2px]"></div>
+                    <div className="absolute w-0.5 h-4 bg-white top-1"></div>
+                    <div className="absolute bottom-0 w-5 h-0.5 bg-white"></div>
+                  </div>
                 </div>
-              </div>
-            </button>
+              </button>
+
+              {/* Close button */}
+              <button
+                onClick={() => setSelectedPhoto(null)}
+                className="bg-black/50 hover:bg-black/70 text-white p-3 rounded-full
+                           transition-all duration-300 hover:scale-110"
+                title="Close"
+              >
+                <div className="w-6 h-6 relative">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-4 h-0.5 bg-white rotate-45 absolute"></div>
+                    <div className="w-4 h-0.5 bg-white -rotate-45 absolute"></div>
+                  </div>
+                </div>
+              </button>
+            </div>
 
             {/* Photo */}
             <div

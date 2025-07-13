@@ -21,12 +21,12 @@ const PolaroidPhoto = ({ imageData, userName, onPolaroidReady, className = '' }:
       // Create image from data
       const img = new Image()
       img.onload = () => {
-        // Polaroid dimensions (classic 3.5" x 4.25" ratio)
-        const polaroidWidth = 400
-        const polaroidHeight = 500
-        const photoWidth = 360
-        const photoHeight = 360
-        const borderWidth = 20
+        // High-quality Polaroid dimensions (classic 3.5" x 4.25" ratio, 2x size)
+        const polaroidWidth = 800
+        const polaroidHeight = 1000
+        const photoWidth = 720
+        const photoHeight = 720
+        const borderWidth = 40
 
         // Set canvas size
         canvas.width = polaroidWidth
@@ -54,36 +54,36 @@ const PolaroidPhoto = ({ imageData, userName, onPolaroidReady, className = '' }:
         ctx.lineWidth = 1
         ctx.strokeRect(photoX, photoY, photoWidth, photoHeight)
 
-        // Add text at bottom
-        const textY = photoY + photoHeight + 40
-        
+        // Add text at bottom (scaled for higher resolution)
+        const textY = photoY + photoHeight + 80
+
         // User name
         ctx.fillStyle = '#333333'
-        ctx.font = 'bold 18px "Comic Sans MS", cursive, sans-serif'
+        ctx.font = 'bold 36px "Comic Sans MS", cursive, sans-serif'
         ctx.textAlign = 'center'
         ctx.fillText(userName, polaroidWidth / 2, textY)
 
         // Date
-        ctx.font = '14px "Comic Sans MS", cursive, sans-serif'
+        ctx.font = '28px "Comic Sans MS", cursive, sans-serif'
         ctx.fillStyle = '#666666'
-        const date = new Date().toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
-          year: 'numeric' 
+        const date = new Date().toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
         })
-        ctx.fillText(date, polaroidWidth / 2, textY + 25)
+        ctx.fillText(date, polaroidWidth / 2, textY + 50)
 
         // Add "About Last Night" branding
-        ctx.font = '12px "Comic Sans MS", cursive, sans-serif'
+        ctx.font = '24px "Comic Sans MS", cursive, sans-serif'
         ctx.fillStyle = '#999999'
-        ctx.fillText('About Last Night', polaroidWidth / 2, textY + 45)
+        ctx.fillText('About Last Night', polaroidWidth / 2, textY + 90)
 
-        // Convert to blob and call callback
+        // Convert to blob and call callback with high quality
         canvas.toBlob((blob) => {
           if (blob) {
             onPolaroidReady(blob)
           }
-        }, 'image/jpeg', 0.9)
+        }, 'image/jpeg', 0.95)
       }
 
       img.src = imageData

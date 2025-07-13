@@ -37,12 +37,12 @@ export const useCamera = () => {
         streamRef.current.getTracks().forEach(track => track.stop())
       }
 
-      // Simple, reliable camera constraints
+      // High-quality camera constraints
       const constraints: MediaStreamConstraints = {
         video: {
           facingMode: 'environment', // Back camera
-          width: { ideal: 1280, max: 1920 },
-          height: { ideal: 720, max: 1080 }
+          width: { ideal: 1920, max: 4096 },
+          height: { ideal: 1080, max: 2160 }
         },
         audio: false
       }
@@ -189,8 +189,8 @@ export const useCamera = () => {
       return null
     }
 
-    // Optimize canvas size for mobile (max 1200px width to reduce file size)
-    const maxWidth = 1200
+    // High-quality canvas size (max 2048px width for excellent quality)
+    const maxWidth = 2048
     const aspectRatio = video.videoHeight / video.videoWidth
 
     if (video.videoWidth > maxWidth) {
@@ -201,17 +201,17 @@ export const useCamera = () => {
       canvas.height = video.videoHeight
     }
 
-    // Draw the current video frame to canvas with optimized size
+    // Draw the current video frame to canvas with high quality
     context.drawImage(video, 0, 0, canvas.width, canvas.height)
 
-    // Get the image data with higher compression (0.6 instead of 0.8)
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.6)
+    // Get the image data with high quality (0.92 for excellent quality)
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92)
 
-    // Convert to blob for upload with higher compression
+    // Convert to blob for upload with high quality
     const blob = await new Promise<Blob>((resolve) => {
       canvas.toBlob((blob) => {
         resolve(blob!)
-      }, 'image/jpeg', 0.6)
+      }, 'image/jpeg', 0.92)
     })
 
     console.log('📸 Photo captured successfully')
