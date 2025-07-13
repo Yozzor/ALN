@@ -19,6 +19,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showAllUsers, setShowAllUsers] = useState(false)
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
 
   // Get user from URL params or session data
   const [searchParams] = useSearchParams()
@@ -29,6 +30,42 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   useEffect(() => {
     fetchPhotos()
   }, [showAllUsers, activeUserName])
+
+  // Keyboard navigation for modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectedPhoto) return
+
+      switch (e.key) {
+        case 'Escape':
+          setSelectedPhoto(null)
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          const currentIndex = photos.findIndex(p => p.url === selectedPhoto.url)
+          const prevIndex = currentIndex > 0 ? currentIndex - 1 : photos.length - 1
+          setSelectedPhoto(photos[prevIndex])
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          const nextIndex = photos.findIndex(p => p.url === selectedPhoto.url)
+          const nextIdx = nextIndex < photos.length - 1 ? nextIndex + 1 : 0
+          setSelectedPhoto(photos[nextIdx])
+          break
+      }
+    }
+
+    if (selectedPhoto) {
+      document.addEventListener('keydown', handleKeyDown)
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden'
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = 'unset'
+    }
+  }, [selectedPhoto, photos])
 
   const fetchPhotos = async () => {
     try {
@@ -182,7 +219,10 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                            hover:-translate-y-2 hover:shadow-glow animate-fade-in"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="relative overflow-hidden">
+                <div
+                  className="relative overflow-hidden cursor-pointer"
+                  onClick={() => setSelectedPhoto(photo)}
+                >
                   <img
                     src={photo.url}
                     alt={`Photo by ${photo.userName}`}
@@ -191,6 +231,13 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent
                                   opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                  {/* Click to expand indicator */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="bg-black/50 backdrop-blur-sm rounded-full p-3">
+                      <div className="w-6 h-6 bg-white rounded opacity-80"></div>
+                    </div>
+                  </div>
                 </div>
                 <div className="p-5">
                   <div className="flex items-center mb-3">
@@ -231,6 +278,91 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
           <div className="w-5 h-5 bg-text-primary opacity-60 rounded-sm group-hover:rotate-180 transition-transform duration-500"></div>
         </button>
       </div>
+
+      {/* Photo Modal */}
+      {selectedPhoto && (
+        <div
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <div className="relative max-w-4xl max-h-full w-full h-full flex items-center justify-center">
+            {/* Close button */}
+            <button
+              onClick={() => setSelectedPhoto(null)}
+              className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full
+                         transition-all duration-300 hover:scale-110"
+              title="Close"
+            >
+              <div className="w-6 h-6 relative">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-4 h-0.5 bg-white rotate-45 absolute"></div>
+                  <div className="w-4 h-0.5 bg-white -rotate-45 absolute"></div>
+                </div>
+              </div>
+            </button>
+
+            {/* Photo */}
+            <div
+              className="relative max-w-full max-h-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={selectedPhoto.url}
+                alt={`Photo by ${selectedPhoto.userName}`}
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              />
+
+              {/* Photo info overlay */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 rounded-b-lg">
+                <div className="text-white">
+                  <h3 className="font-medium text-lg mb-2">Photo by {selectedPhoto.userName}</h3>
+                  <div className="flex items-center gap-4 text-sm text-white/80">
+                    <span>📅 {new Date(selectedPhoto.uploadedAt).toLocaleDateString()}</span>
+                    <span>📁 {(selectedPhoto.size / 1024).toFixed(1)} KB</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation arrows (if you want to add next/prev functionality later) */}
+            <div className="absolute left-4 top-1/2 -translate-y-1/2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const currentIndex = photos.findIndex(p => p.url === selectedPhoto.url)
+                  const prevIndex = currentIndex > 0 ? currentIndex - 1 : photos.length - 1
+                  setSelectedPhoto(photos[prevIndex])
+                }}
+                className="bg-black/50 hover:bg-black/70 text-white p-3 rounded-full
+                           transition-all duration-300 hover:scale-110"
+                title="Previous photo"
+              >
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <div className="w-3 h-3 border-l-2 border-t-2 border-white rotate-[-45deg]"></div>
+                </div>
+              </button>
+            </div>
+
+            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const currentIndex = photos.findIndex(p => p.url === selectedPhoto.url)
+                  const nextIndex = currentIndex < photos.length - 1 ? currentIndex + 1 : 0
+                  setSelectedPhoto(photos[nextIndex])
+                }}
+                className="bg-black/50 hover:bg-black/70 text-white p-3 rounded-full
+                           transition-all duration-300 hover:scale-110"
+                title="Next photo"
+              >
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <div className="w-3 h-3 border-r-2 border-t-2 border-white rotate-45"></div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
