@@ -21,28 +21,15 @@ const PolaroidPhoto = ({ imageData, userName, onPolaroidReady, className = '' }:
       // Create image from data
       const img = new Image()
       img.onload = () => {
-        // Calculate photo dimensions while preserving aspect ratio
-        const maxPhotoWidth = 720
-        const maxPhotoHeight = 540 // Leave space for text at bottom
+        // Use the ACTUAL photo dimensions (no shrinking!)
+        const photoWidth = img.width
+        const photoHeight = img.height
         const borderWidth = 40
+        const textAreaHeight = 160 // Space for text at bottom
 
-        // Calculate actual photo dimensions maintaining aspect ratio
-        const imgAspectRatio = img.width / img.height
-        let photoWidth, photoHeight
-
-        if (imgAspectRatio > maxPhotoWidth / maxPhotoHeight) {
-          // Image is wider - fit to width
-          photoWidth = maxPhotoWidth
-          photoHeight = maxPhotoWidth / imgAspectRatio
-        } else {
-          // Image is taller - fit to height
-          photoHeight = maxPhotoHeight
-          photoWidth = maxPhotoHeight * imgAspectRatio
-        }
-
-        // Calculate Polaroid dimensions based on photo size
-        const polaroidWidth = Math.max(800, photoWidth + (borderWidth * 2))
-        const polaroidHeight = photoHeight + (borderWidth * 2) + 200 // Extra space for text
+        // Polaroid adapts to photo size + borders + text area
+        const polaroidWidth = photoWidth + (borderWidth * 2)
+        const polaroidHeight = photoHeight + (borderWidth * 2) + textAreaHeight
 
         // Set canvas size
         canvas.width = polaroidWidth
@@ -70,29 +57,35 @@ const PolaroidPhoto = ({ imageData, userName, onPolaroidReady, className = '' }:
         ctx.lineWidth = 2
         ctx.strokeRect(photoX, photoY, photoWidth, photoHeight)
 
-        // Add text at bottom (dynamically positioned)
-        const textStartY = photoY + photoHeight + 60
+        // Add text at bottom (scaled to photo size)
+        const textStartY = photoY + photoHeight + 40
+
+        // Scale text size based on photo width (responsive text)
+        const textScale = Math.min(photoWidth / 800, 1.5) // Scale factor based on photo width
+        const userNameSize = Math.max(18, 24 * textScale)
+        const dateSize = Math.max(14, 18 * textScale)
+        const brandSize = Math.max(12, 16 * textScale)
 
         // User name
         ctx.fillStyle = '#333333'
-        ctx.font = 'bold 36px "Comic Sans MS", cursive, sans-serif'
+        ctx.font = `bold ${userNameSize}px "Comic Sans MS", cursive, sans-serif`
         ctx.textAlign = 'center'
         ctx.fillText(userName, polaroidWidth / 2, textStartY)
 
         // Date
-        ctx.font = '28px "Comic Sans MS", cursive, sans-serif'
+        ctx.font = `${dateSize}px "Comic Sans MS", cursive, sans-serif`
         ctx.fillStyle = '#666666'
         const date = new Date().toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
           year: 'numeric'
         })
-        ctx.fillText(date, polaroidWidth / 2, textStartY + 50)
+        ctx.fillText(date, polaroidWidth / 2, textStartY + (dateSize * 1.8))
 
         // Add "About Last Night" branding
-        ctx.font = '24px "Comic Sans MS", cursive, sans-serif'
+        ctx.font = `${brandSize}px "Comic Sans MS", cursive, sans-serif`
         ctx.fillStyle = '#999999'
-        ctx.fillText('About Last Night', polaroidWidth / 2, textStartY + 90)
+        ctx.fillText('About Last Night', polaroidWidth / 2, textStartY + (dateSize * 1.8) + (brandSize * 1.8))
 
         // Convert to blob and call callback with high quality
         canvas.toBlob((blob) => {
