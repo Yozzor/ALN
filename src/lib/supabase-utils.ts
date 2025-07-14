@@ -1,4 +1,4 @@
-import { supabase, Event, EventInsert, EventParticipant, EventParticipantInsert, AWARD_CATEGORIES } from './supabase'
+import { supabase, Event, EventInsert, EventParticipant, AWARD_CATEGORIES } from './supabase'
 
 /**
  * Generate a 6-character event code
@@ -16,7 +16,7 @@ export function generateEventCode(): string {
  * Check if an event code is unique
  */
 export async function isEventCodeUnique(code: string): Promise<boolean> {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('events')
     .select('id')
     .eq('event_code', code)

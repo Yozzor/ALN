@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { usePhotoSession } from '../hooks/usePhotoSession'
-import { supabase } from '../lib/supabase'
 
 interface Photo {
   url: string

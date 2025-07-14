@@ -68,7 +68,7 @@ export const useSupabaseStorage = () => {
       setUploadProgress(25)
 
       // Upload file to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('event-photos')
         .upload(filePath, photoData.blob, {
           contentType: 'image/jpeg',
@@ -178,12 +178,4 @@ export const useSupabaseStorage = () => {
   }
 }
 
-// Helper function to convert blob to base64 (if needed)
-const blobToBase64 = (blob: Blob): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = reject
-    reader.readAsDataURL(blob)
-  })
-}
+
