@@ -22,10 +22,10 @@ const MobileApp = () => {
   const {
     isAuthenticated,
     isUploading,
-    error: storageError,
+    error: blobError,
     authenticate,
     uploadPhoto
-  } = useSupabaseStorage()
+  } = useVercelBlob()
 
   // Test Supabase connection on app load
   useEffect(() => {
