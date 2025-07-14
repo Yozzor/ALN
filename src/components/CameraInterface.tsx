@@ -162,7 +162,7 @@ const CameraInterface = ({
               <div className="flex items-center gap-3">
                 <div className="w-4 h-4 bg-text-primary opacity-60 rounded-sm"></div>
                 <span className="text-sm font-medium tracking-wide">
-                  My Gallery
+                  Gallery
                 </span>
               </div>
             </a>
@@ -263,20 +263,21 @@ const CameraInterface = ({
               </div>
             )}
             
+            {/* Photo Counter Warning - Fixed Position */}
+            {photosRemaining <= 3 && (
+              <div className="absolute top-20 left-6 right-6 z-20 bg-red-500/20 backdrop-blur-md rounded-xl p-4 text-center border border-red-400/30 shadow-premium">
+                <div className="flex items-center justify-center space-x-2 mb-2">
+                  <div className="w-4 h-4 bg-red-400 rounded-full opacity-60"></div>
+                  <p className="text-white font-light">
+                    Only {photosRemaining} photos remaining
+                  </p>
+                </div>
+                <p className="text-red-100 text-sm font-light">Make them count</p>
+              </div>
+            )}
+
             {/* Camera Overlay */}
             <div className="absolute inset-0 flex flex-col justify-end p-6">
-              {/* Photo Counter Warning */}
-              {photosRemaining <= 3 && (
-                <div className="bg-red-500/20 backdrop-blur-md rounded-xl p-4 mb-4 text-center border border-red-400/30 shadow-premium">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <div className="w-4 h-4 bg-red-400 rounded-full opacity-60"></div>
-                    <p className="text-white font-light">
-                      Only {photosRemaining} photos remaining
-                    </p>
-                  </div>
-                  <p className="text-red-100 text-sm font-light">Make them count</p>
-                </div>
-              )}
 
               {/* Upload Status */}
               {isUploading && (

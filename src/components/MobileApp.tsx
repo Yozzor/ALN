@@ -4,11 +4,13 @@ import CameraInterface from './CameraInterface'
 import GameOverScreen from './GameOverScreen'
 import { usePhotoSession } from '../hooks/usePhotoSession'
 import { useVercelBlob } from '../hooks/useVercelBlob'
+import { testSupabaseConnection } from '../utils/supabaseTest'
 
 type AppState = 'welcome' | 'camera' | 'gameOver'
 
 const MobileApp = () => {
   const [appState, setAppState] = useState<AppState>('welcome')
+  const [supabaseReady, setSupabaseReady] = useState(false)
   const {
     userName,
     photosRemaining,
@@ -16,14 +18,31 @@ const MobileApp = () => {
     takePhoto,
     isSessionActive
   } = usePhotoSession()
-  
+
   const {
     isAuthenticated,
     isUploading,
-    error: blobError,
+    error: storageError,
     authenticate,
     uploadPhoto
-  } = useVercelBlob()
+  } = useSupabaseStorage()
+
+  // Test Supabase connection on app load
+  useEffect(() => {
+    const initSupabase = async () => {
+      console.log('🚀 Initializing About Last Night app...')
+      const isReady = await testSupabaseConnection()
+      setSupabaseReady(isReady)
+
+      if (isReady) {
+        console.log('✅ App ready with Supabase integration!')
+      } else {
+        console.error('❌ App started but Supabase connection failed')
+      }
+    }
+
+    initSupabase()
+  }, [])
 
   // Check for existing session on app load
   useEffect(() => {
@@ -76,12 +95,19 @@ const MobileApp = () => {
       {/* Background gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-surface-primary via-surface-secondary to-surface-tertiary opacity-80"></div>
 
+      {/* Supabase Connection Status */}
+      {!supabaseReady && (
+        <div className="fixed top-0 left-0 right-0 bg-accent-orange-500 text-white px-4 py-2 text-center text-sm font-medium z-50">
+          🔄 Connecting to database...
+        </div>
+      )}
+
       {/* Content */}
       <div className="relative z-10">
         {appState === 'welcome' && (
           <WelcomeScreen
             onStartSession={handleStartSession}
-            isLoading={false}
+            isLoading={!supabaseReady}
           />
         )}
 

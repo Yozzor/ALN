@@ -1,5 +1,12 @@
-// Vercel Blob Storage upload endpoint
+// Hybrid upload endpoint: Vercel Blob Storage + Supabase metadata
 import { put } from '@vercel/blob';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL || 'https://getikieipnbjliyopiiq.supabase.co',
+  process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdldGlraWVpcG5iamxpeW9waWlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0OTYyNjAsImV4cCI6MjA2ODA3MjI2MH0.MA9G40j0vcUTrZZ2delB3p8SlKt1NXmQm75pxmx6uf8'
+);
 
 export default async function handler(req, res) {
   // Only allow POST requests
@@ -60,6 +67,12 @@ export default async function handler(req, res) {
     });
 
     console.log('✅ Upload successful! Blob URL:', blob.url);
+
+    // TODO: Save photo metadata to Supabase for future voting features
+    // For now, we'll skip this until we implement the event system
+    // This will allow us to link photos to events and enable voting
+
+    console.log('📝 Photo metadata ready for future Supabase integration');
 
     // Return success response
     return res.status(200).json({

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { usePhotoSession } from '../hooks/usePhotoSession'
+import { supabase } from '../lib/supabase'
 
 interface Photo {
   url: string
@@ -14,12 +15,28 @@ interface PhotoGalleryProps {
   currentUser?: string | null
 }
 
+// Award categories for voting
+const AWARD_CATEGORIES = [
+  { id: 'most_emotional', label: 'Most Emotional', emoji: '😭', color: 'from-blue-500 to-purple-500' },
+  { id: 'silliest_picture', label: 'Silliest Picture', emoji: '😂', color: 'from-yellow-500 to-orange-500' },
+  { id: 'most_creative', label: 'Most Creative', emoji: '🎨', color: 'from-purple-500 to-pink-500' },
+  { id: 'best_group_photo', label: 'Best Group Photo', emoji: '👥', color: 'from-green-500 to-teal-500' },
+  { id: 'most_romantic', label: 'Most Romantic', emoji: '💕', color: 'from-pink-500 to-red-500' },
+  { id: 'funniest_moment', label: 'Funniest Moment', emoji: '🕺', color: 'from-orange-500 to-yellow-500' },
+  { id: 'best_candid', label: 'Best Candid', emoji: '📸', color: 'from-teal-500 to-blue-500' },
+  { id: 'most_artistic', label: 'Most Artistic', emoji: '🎭', color: 'from-indigo-500 to-purple-500' },
+  { id: 'best_dance_move', label: 'Best Dance Move', emoji: '💃', color: 'from-red-500 to-pink-500' },
+  { id: 'most_memorable', label: 'Most Memorable', emoji: '⭐', color: 'from-amber-500 to-yellow-500' }
+] as const
+
 const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showAllUsers, setShowAllUsers] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
+  const [viewMode, setViewMode] = useState<'gallery' | 'voting'>('gallery')
+  const [currentVotingPhoto, setCurrentVotingPhoto] = useState<Photo | null>(null)
 
   // Get user from URL params or session data
   const [searchParams] = useSearchParams()
@@ -30,6 +47,43 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   useEffect(() => {
     fetchPhotos()
   }, [showAllUsers, activeUserName])
+
+  // Get random photo for voting
+  const getRandomVotingPhoto = () => {
+    if (photos.length === 0) return null
+    const randomIndex = Math.floor(Math.random() * photos.length)
+    return photos[randomIndex]
+  }
+
+  // Start voting mode
+  const startVoting = () => {
+    setViewMode('voting')
+    setCurrentVotingPhoto(getRandomVotingPhoto())
+  }
+
+  // Vote for a photo
+  const voteForPhoto = async (photoUrl: string, category: string) => {
+    try {
+      console.log(`🗳️ Voting for photo: ${photoUrl} in category: ${category}`)
+
+      // TODO: Save vote to Supabase when event system is implemented
+      // For now, just log the vote
+
+      // Show next random photo
+      setCurrentVotingPhoto(getRandomVotingPhoto())
+
+      // Show success feedback
+      // TODO: Add toast notification
+
+    } catch (error) {
+      console.error('Failed to vote:', error)
+    }
+  }
+
+  // Skip photo without voting
+  const skipPhoto = () => {
+    setCurrentVotingPhoto(getRandomVotingPhoto())
+  }
 
   // Keyboard navigation for modal
   useEffect(() => {
@@ -95,6 +149,9 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const fetchPhotos = async () => {
     try {
       setLoading(true)
+      setError(null)
+
+      // Use existing Vercel Blob API for now
       const response = await fetch('/api/photos')
 
       if (!response.ok) {
@@ -111,6 +168,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
       setPhotos(allPhotos)
     } catch (err) {
+      console.error('Error fetching photos:', err)
       setError(err instanceof Error ? err.message : 'Failed to load photos')
     } finally {
       setLoading(false)
@@ -182,16 +240,56 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               </p>
             </div>
 
-            {/* Toggle Button */}
-            {activeUserName && (
-              <button
-                onClick={() => setShowAllUsers(!showAllUsers)}
-                className="btn-secondary flex items-center gap-3 font-medium tracking-wide"
-              >
-                <div className="w-4 h-4 bg-text-primary opacity-60 rounded-sm"></div>
-                {showAllUsers ? 'My Photos' : 'All Photos'}
-              </button>
-            )}
+            {/* Control Panel */}
+            <div className="flex items-center gap-4">
+              {/* View Mode Toggle */}
+              {activeUserName && viewMode === 'gallery' && (
+                <div className="flex bg-surface-card rounded-xl border border-border-primary overflow-hidden">
+                  <button
+                    onClick={() => setShowAllUsers(false)}
+                    className={`px-4 py-2 text-sm font-medium tracking-wide transition-all duration-300 ${
+                      !showAllUsers
+                        ? 'bg-primary-500 text-white'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                    }`}
+                  >
+                    My Photos
+                  </button>
+                  <button
+                    onClick={() => setShowAllUsers(true)}
+                    className={`px-4 py-2 text-sm font-medium tracking-wide transition-all duration-300 ${
+                      showAllUsers
+                        ? 'bg-primary-500 text-white'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                    }`}
+                  >
+                    All Photos
+                  </button>
+                </div>
+              )}
+
+              {/* Start Voting Button */}
+              {viewMode === 'gallery' && photos.length > 0 && (
+                <button
+                  onClick={startVoting}
+                  className="btn-primary flex items-center gap-3 font-medium tracking-wide"
+                >
+                  <span className="text-lg">🗳️</span>
+                  Start Voting
+                </button>
+              )}
+
+              {/* Back to Gallery Button */}
+              {viewMode === 'voting' && (
+                <button
+                  onClick={() => setViewMode('gallery')}
+                  className="btn-secondary flex items-center gap-3 font-medium tracking-wide"
+                >
+                  <span className="text-lg">📸</span>
+                  Back to Gallery
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Back to App Link */}
@@ -312,6 +410,74 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
           </div>
         )}
       </div>
+
+      {/* Voting Interface */}
+      {viewMode === 'voting' && currentVotingPhoto && (
+        <div className="fixed inset-0 bg-black z-[90] flex flex-col">
+          {/* Voting Photo */}
+          <div className="flex-1 relative flex items-center justify-center p-4">
+            <img
+              src={currentVotingPhoto.url}
+              alt={`Photo by ${currentVotingPhoto.userName}`}
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+
+            {/* Photo Info Overlay */}
+            <div className="absolute top-6 left-6 right-6 flex justify-between items-start">
+              <div className="bg-black/70 backdrop-blur-sm rounded-xl p-4">
+                <p className="text-white font-medium">Photo by {currentVotingPhoto.userName}</p>
+                <p className="text-white/70 text-sm">{new Date(currentVotingPhoto.uploadedAt).toLocaleDateString()}</p>
+              </div>
+
+              {/* Skip Button */}
+              <button
+                onClick={skipPhoto}
+                className="bg-black/70 backdrop-blur-sm rounded-xl p-3 text-white hover:bg-black/80 transition-colors"
+                title="Skip this photo"
+              >
+                <span className="text-xl">⏭️</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Award Category Buttons */}
+          <div className="bg-black/90 backdrop-blur-sm p-6">
+            <div className="max-w-4xl mx-auto">
+              <h3 className="text-white text-center mb-6 font-medium">Vote for this photo:</h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {AWARD_CATEGORIES.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => voteForPhoto(currentVotingPhoto.url, category.id)}
+                    className={`bg-gradient-to-r ${category.color} hover:scale-105 active:scale-95
+                               text-white font-medium py-3 px-4 rounded-xl transition-all duration-200
+                               shadow-lg hover:shadow-xl flex flex-col items-center gap-2`}
+                  >
+                    <span className="text-2xl">{category.emoji}</span>
+                    <span className="text-xs text-center leading-tight">{category.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Quick Actions */}
+              <div className="flex justify-center gap-4 mt-6">
+                <button
+                  onClick={skipPhoto}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors"
+                >
+                  Skip Photo
+                </button>
+                <button
+                  onClick={() => voteForPhoto(currentVotingPhoto.url, 'most_memorable')}
+                  className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:scale-105 text-white px-6 py-2 rounded-lg transition-all duration-200 font-medium"
+                >
+                  ⭐ Quick Vote
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Refresh Button */}
       <div className="fixed bottom-8 right-8 z-50">
