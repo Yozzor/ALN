@@ -26,6 +26,8 @@ try {
 
   // Fallback: Show error message
   const rootElement = document.getElementById('root')
+  const errorMessage = error instanceof Error ? error.message : String(error)
+
   if (rootElement) {
     rootElement.innerHTML = `
       <div style="
@@ -42,7 +44,7 @@ try {
         <div>
           <h1 style="color: #ff6b6b; margin-bottom: 20px;">About Last Night</h1>
           <p style="margin-bottom: 10px;">App failed to load</p>
-          <p style="font-size: 14px; opacity: 0.7;">Error: ${error.message}</p>
+          <p style="font-size: 14px; opacity: 0.7;">Error: ${errorMessage}</p>
           <p style="font-size: 12px; margin-top: 20px;">Please refresh the page or contact support</p>
         </div>
       </div>
