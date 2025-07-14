@@ -4,7 +4,7 @@ import App from './App.tsx'
 import './index.css'
 
 // Debug: Add error handling
-console.log('🚀 About Last Night - Starting app...')
+console.log('🚀 About Last Night - Starting app with Supabase env vars...')
 
 try {
   const rootElement = document.getElementById('root')
