@@ -139,7 +139,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
         id: `${Date.now()}-${i}`,
         emoji,
         x: Math.random() * 100, // Random x position (0-100%)
-        y: 100, // Start from bottom
+        y: 0, // Start from bottom of screen (bottom: 0%)
         delay: i * 100 // Stagger the animations
       })
     }
