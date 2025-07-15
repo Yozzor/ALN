@@ -53,6 +53,8 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     return saved ? new Set(JSON.parse(saved)) : new Set()
   })
   const [isVoting, setIsVoting] = useState(false) // Prevent rapid clicking
+  const [observationTimer, setObservationTimer] = useState(0) // 3-second observation timer
+  const [canVote, setCanVote] = useState(false) // Whether user can vote (after observation)
 
   // Get user from URL params or session data
   const [searchParams] = useSearchParams()
@@ -92,6 +94,24 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     fetchPhotos()
   }, [showAllUsers, activeUserName])
 
+  // Initialize with first random photo when photos are loaded
+  useEffect(() => {
+    if (photos.length > 0 && !currentVotingPhoto && viewMode === 'voting') {
+      const firstPhoto = getRandomVotingPhoto()
+      setCurrentVotingPhoto(firstPhoto)
+      if (firstPhoto) {
+        startObservationTimer()
+      }
+    }
+  }, [photos, viewMode])
+
+  // Start observation timer when currentVotingPhoto changes (but not during voting process)
+  useEffect(() => {
+    if (currentVotingPhoto && !isVoting && viewMode === 'voting') {
+      startObservationTimer()
+    }
+  }, [currentVotingPhoto])
+
   // Get random photo for voting (excluding already voted photos)
   const getRandomVotingPhoto = () => {
     if (photos.length === 0) {
@@ -115,14 +135,35 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   // Start voting mode
   const startVoting = () => {
     setViewMode('voting')
-    setCurrentVotingPhoto(getRandomVotingPhoto())
+    const firstPhoto = getRandomVotingPhoto()
+    setCurrentVotingPhoto(firstPhoto)
+    if (firstPhoto) {
+      startObservationTimer()
+    }
   }
 
-  // Vote for a photo with debouncing
+  // Start observation timer for new photo
+  const startObservationTimer = () => {
+    setCanVote(false)
+    setObservationTimer(3) // 3 seconds
+
+    const timer = setInterval(() => {
+      setObservationTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          setCanVote(true) // Enable voting after 3 seconds
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  // Vote for a photo with observation timer and debouncing
   const voteForPhoto = async (photoUrl: string, category: string) => {
-    // Prevent rapid clicking
-    if (isVoting) {
-      console.log('🚫 Vote blocked - already voting')
+    // Prevent voting during observation period or while already voting
+    if (!canVote || isVoting) {
+      console.log('🚫 Vote blocked - observation period or already voting')
       return
     }
 
@@ -149,9 +190,15 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
       // Show next random photo after animation starts
       setTimeout(() => {
-        setCurrentVotingPhoto(getRandomVotingPhoto())
+        const nextPhoto = getRandomVotingPhoto()
+        setCurrentVotingPhoto(nextPhoto)
         setIsVoting(false) // Re-enable voting
-      }, 1000) // Increased delay to see animation better
+
+        // Start observation timer for next photo
+        if (nextPhoto) {
+          startObservationTimer()
+        }
+      }, 1500) // Increased delay to see animation better
 
     } catch (error) {
       console.error('Failed to vote:', error)
@@ -161,7 +208,11 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
   // Skip photo without voting
   const skipPhoto = () => {
-    setCurrentVotingPhoto(getRandomVotingPhoto())
+    const nextPhoto = getRandomVotingPhoto()
+    setCurrentVotingPhoto(nextPhoto)
+    if (nextPhoto) {
+      startObservationTimer()
+    }
   }
 
   // Refresh voting list (fetch new photos but keep voted history)
@@ -178,25 +229,29 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     }, 100)
   }
 
-  // Create floating emoji animation with bubble-like effect
+  // Create floating emoji animation with smooth staggered fade-ins
   const createFloatingEmojis = (emoji: string) => {
     console.log(`🎆 Creating floating emojis for: ${emoji}`)
     const newEmojis: FloatingEmoji[] = []
-    const emojiCount = 10 + Math.floor(Math.random() * 6) // 10-15 emojis
+    const emojiCount = 12 + Math.floor(Math.random() * 6) // 12-17 emojis
 
     for (let i = 0; i < emojiCount; i++) {
       // Create more natural distribution across screen width
       const xPos = 10 + Math.random() * 80 // Keep emojis within 10-90% of screen width
 
-      // Random horizontal drift for bubble effect (-20px to +20px)
-      const drift = (Math.random() * 40 - 20)
+      // Random horizontal drift for bubble effect (-25px to +25px)
+      const drift = (Math.random() * 50 - 25)
+
+      // Staggered delays for smooth individual fade-ins (0-2000ms spread)
+      const baseDelay = i * 150 // Base stagger
+      const randomDelay = Math.random() * 200 // Add randomness
 
       newEmojis.push({
         id: `${Date.now()}-${i}`,
         emoji,
         x: xPos, // Random x position (10-90%)
         y: 0, // Start from bottom of screen (bottom: 0%)
-        delay: i * (50 + Math.random() * 100), // Randomized staggered delay (50-150ms)
+        delay: baseDelay + randomDelay, // Smooth staggered delays
         driftX: drift // Horizontal drift for bubble effect
       })
     }
@@ -212,7 +267,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     setTimeout(() => {
       console.log(`🎆 Removing emojis after animation`)
       setFloatingEmojis(prev => prev.filter(e => !newEmojis.some(ne => ne.id === e.id)))
-    }, 4500) // Increased to match longer animation duration
+    }, 5000) // Increased to match longer animation duration
   }
 
   // Keyboard navigation for modal
@@ -652,6 +707,30 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
             </div>
           </div>
 
+          {/* Observation Timer */}
+          {!canVote && observationTimer > 0 && (
+            <div className="flex-shrink-0 bg-black/90 backdrop-blur-sm p-4 border-b border-gray-800">
+              <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-3">
+                  <p className="text-white text-sm font-medium mb-2">
+                    📸 Take a moment to observe this photo
+                  </p>
+                  <p className="text-gray-300 text-xs">
+                    Voting available in {observationTimer} second{observationTimer !== 1 ? 's' : ''}
+                  </p>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-full progress-bar"
+                    key={currentVotingPhoto.url} // Reset animation on new photo
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Award Category Buttons - Scrollable */}
           <div className="flex-shrink-0 bg-black/90 backdrop-blur-sm p-4 pb-8">
             <div className="max-w-4xl mx-auto">
@@ -663,9 +742,14 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                       console.log(`🎯 Button clicked for category: ${category.id}`)
                       voteForPhoto(currentVotingPhoto.url, category.id)
                     }}
-                    className={`bg-gradient-to-r ${category.color} hover:scale-105 active:scale-95
+                    disabled={!canVote || isVoting}
+                    className={`bg-gradient-to-r ${category.color}
+                               ${canVote && !isVoting
+                                 ? 'hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl'
+                                 : 'opacity-50 cursor-not-allowed'
+                               }
                                text-white font-medium py-4 px-3 rounded-xl transition-all duration-200
-                               shadow-lg hover:shadow-xl flex flex-col items-center gap-1 min-h-[80px]`}
+                               flex flex-col items-center gap-1 min-h-[80px]`}
                   >
                     <span className="text-3xl">{category.emoji}</span>
                     <span className="text-xs text-center leading-tight">{category.label}</span>
