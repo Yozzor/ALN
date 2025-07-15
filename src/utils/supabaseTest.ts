@@ -53,7 +53,7 @@ export async function testSupabaseConnection() {
 
     // Test: Check which Supabase project we're actually connected to
     console.log('🔍 Checking Supabase project connection...')
-    const { data: projectInfo, error: projectError } = await supabase
+    const { data: projectInfo } = await supabase
       .from('award_categories')
       .select('id, name')
       .limit(1)
@@ -64,7 +64,7 @@ export async function testSupabaseConnection() {
     
     // Test 3: Test event table access with minimal query first
     console.log('🔍 Testing events table with minimal query...')
-    const { data: eventCount, error: countError } = await supabase
+    const { error: countError } = await supabase
       .from('events')
       .select('*', { count: 'exact', head: true })
 
@@ -79,7 +79,7 @@ export async function testSupabaseConnection() {
     console.log('🔍 Testing individual columns...')
 
     // Test id column
-    const { data: idTest, error: idError } = await supabase
+    const { error: idError } = await supabase
       .from('events')
       .select('id')
       .limit(1)
@@ -91,7 +91,7 @@ export async function testSupabaseConnection() {
     console.log('✅ ID column accessible')
 
     // Test title column specifically
-    const { data: titleTest, error: titleError } = await supabase
+    const { error: titleError } = await supabase
       .from('events')
       .select('title')
       .limit(1)
@@ -103,7 +103,7 @@ export async function testSupabaseConnection() {
     console.log('✅ Title column accessible')
 
     // Test event_code column
-    const { data: codeTest, error: codeError } = await supabase
+    const { error: codeError } = await supabase
       .from('events')
       .select('event_code')
       .limit(1)
