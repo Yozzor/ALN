@@ -151,8 +151,8 @@ const CameraInterface = ({
           </div>
         </div>
 
-        {/* Bottom Row - Gallery Button and Photo Counter */}
-        <div className="flex items-center justify-between gap-4">
+        {/* Bottom Row - Gallery Button Only */}
+        <div className="flex items-center">
           {/* Gallery Button */}
           <a
             href={`/gallery?user=${encodeURIComponent(userName)}`}
@@ -167,34 +167,6 @@ const CameraInterface = ({
               Gallery
             </span>
           </a>
-
-          {/* Premium Photo Counter */}
-          <div className={`glass rounded-lg px-4 py-2.5 border transition-all duration-300 flex-shrink-0 ${
-            photosRemaining <= 3
-              ? 'border-red-400/50 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.2)]'
-              : photosRemaining <= 5
-              ? 'border-amber-400/50 bg-amber-500/10 shadow-[0_0_20px_rgba(251,191,36,0.2)]'
-              : 'border-border-primary/50 hover:border-primary-400/50'
-          }`}>
-            <div className="flex items-center gap-3">
-              <div className={`text-xl font-light tracking-wide ${
-                photosRemaining <= 3 ? 'text-red-400' :
-                photosRemaining <= 5 ? 'text-amber-400' : 'text-text-primary'
-              }`}>
-                {photosRemaining}
-              </div>
-              <div className="text-left">
-                <div className="text-xs text-text-tertiary font-light tracking-wider leading-tight">
-                  photos left
-                </div>
-                {photosRemaining <= 3 && (
-                  <div className="text-xs text-red-400 font-light animate-pulse leading-tight">
-                    Running low
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
