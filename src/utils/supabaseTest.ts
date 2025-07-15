@@ -90,17 +90,50 @@ export async function testSupabaseConnection() {
     }
     console.log('✅ ID column accessible')
 
-    // Test title column specifically
+    // Test title column specifically with different approaches
+    console.log('🔍 Testing title column with SELECT *...')
+    const { data: allData, error: allError } = await supabase
+      .from('events')
+      .select('*')
+      .limit(1)
+
+    if (allError) {
+      console.error('❌ SELECT * failed:', allError)
+      return false
+    }
+
+    if (allData && allData.length > 0 && allData[0].title) {
+      console.log('✅ Title column accessible via SELECT *')
+      console.log('📊 Sample title:', allData[0].title)
+    } else {
+      console.log('❌ Title column not found in SELECT * result')
+      console.log('📊 Available columns:', Object.keys(allData?.[0] || {}))
+    }
+
+    // Try direct title selection
+    console.log('🔍 Testing direct title selection...')
     const { error: titleError } = await supabase
       .from('events')
       .select('title')
       .limit(1)
 
     if (titleError) {
-      console.error('❌ Title column test failed:', titleError)
-      return false
+      console.error('❌ Direct title selection failed:', titleError)
+      console.log('🔍 Trying alternative: id,title selection...')
+
+      const { error: combinedError } = await supabase
+        .from('events')
+        .select('id,title')
+        .limit(1)
+
+      if (combinedError) {
+        console.error('❌ Combined id,title selection failed:', combinedError)
+      } else {
+        console.log('✅ Combined id,title selection works!')
+      }
+    } else {
+      console.log('✅ Direct title selection works!')
     }
-    console.log('✅ Title column accessible')
 
     // Test event_code column
     const { error: codeError } = await supabase
