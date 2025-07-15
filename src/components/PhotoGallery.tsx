@@ -754,7 +754,10 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       )}
 
       {/* Floating Emojis Animation */}
-      {floatingEmojis.length > 0 && console.log(`🎆 Rendering ${floatingEmojis.length} floating emojis`)}
+      {floatingEmojis.length > 0 && (() => {
+        console.log(`🎆 Rendering ${floatingEmojis.length} floating emojis`)
+        return null
+      })()}
       {floatingEmojis.map((emoji) => (
         <div
           key={emoji.id}
