@@ -4,7 +4,7 @@ import App from './App.tsx'
 import './index.css'
 
 // Debug: Add error handling
-console.log('🚀 About Last Night - FIXED VERSION - Starting app with Supabase env vars...')
+console.log('🚀 About Last Night - SCHEMA CACHE RELOADED - Starting app with Supabase env vars...')
 
 try {
   const rootElement = document.getElementById('root')
