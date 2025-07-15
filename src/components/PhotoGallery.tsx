@@ -46,6 +46,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const [viewMode, setViewMode] = useState<'gallery' | 'voting'>('gallery')
   const [currentVotingPhoto, setCurrentVotingPhoto] = useState<Photo | null>(null)
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([])
+  const [votedPhotoUrls, setVotedPhotoUrls] = useState<Set<string>>(new Set())
 
   // Get user from URL params or session data
   const [searchParams] = useSearchParams()
@@ -85,11 +86,24 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     fetchPhotos()
   }, [showAllUsers, activeUserName])
 
-  // Get random photo for voting
+  // Get random photo for voting (excluding already voted photos)
   const getRandomVotingPhoto = () => {
-    if (photos.length === 0) return null
-    const randomIndex = Math.floor(Math.random() * photos.length)
-    return photos[randomIndex]
+    if (photos.length === 0) {
+      console.log('📷 No photos available for voting')
+      return null
+    }
+
+    // Filter out photos that have already been voted on
+    const unvotedPhotos = photos.filter(photo => !votedPhotoUrls.has(photo.url))
+    console.log(`📷 Total photos: ${photos.length}, Voted: ${votedPhotoUrls.size}, Unvoted: ${unvotedPhotos.length}`)
+
+    if (unvotedPhotos.length === 0) {
+      console.log('📷 No more unvoted photos available')
+      return null // No more photos to vote on
+    }
+
+    const randomIndex = Math.floor(Math.random() * unvotedPhotos.length)
+    return unvotedPhotos[randomIndex]
   }
 
   // Start voting mode
@@ -102,6 +116,9 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const voteForPhoto = async (photoUrl: string, category: string) => {
     try {
       console.log(`🗳️ Voting for photo: ${photoUrl} in category: ${category}`)
+
+      // Mark this photo as voted
+      setVotedPhotoUrls(prev => new Set([...prev, photoUrl]))
 
       // Find the category to get the emoji
       const selectedCategory = AWARD_CATEGORIES.find(cat => cat.id === category)
@@ -126,6 +143,17 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   // Skip photo without voting
   const skipPhoto = () => {
     setCurrentVotingPhoto(getRandomVotingPhoto())
+  }
+
+  // Refresh voting list (clear voted photos and fetch new ones)
+  const refreshVotingList = async () => {
+    setVotedPhotoUrls(new Set())
+    await fetchPhotos()
+    // After photos are fetched, get a new random photo
+    setTimeout(() => {
+      const newPhoto = getRandomVotingPhoto()
+      setCurrentVotingPhoto(newPhoto)
+    }, 100)
   }
 
   // Create floating emoji animation
@@ -572,7 +600,8 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       </div>
 
       {/* Voting Interface */}
-      {viewMode === 'voting' && currentVotingPhoto && (
+      {viewMode === 'voting' && (
+        currentVotingPhoto ? (
         <div className="fixed inset-0 bg-black z-[90] flex flex-col overflow-y-auto">
           {/* Voting Photo */}
           <div className="flex-shrink-0 relative flex items-center justify-center p-4 min-h-[50vh] max-h-[60vh]">
@@ -627,6 +656,45 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
             </div>
           </div>
         </div>
+        ) : (
+          /* No More Photos Interface */
+          <div className="fixed inset-0 bg-black z-[90] flex flex-col items-center justify-center p-8">
+            <div className="text-center max-w-md">
+              {/* Icon */}
+              <div className="text-6xl mb-6">🎉</div>
+
+              {/* Title */}
+              <h2 className="text-2xl font-bold text-white mb-4">
+                All Caught Up!
+              </h2>
+
+              {/* Message */}
+              <p className="text-gray-300 mb-8 leading-relaxed">
+                You've voted on all available photos for now. Check back later for new photos to vote on!
+              </p>
+
+              {/* Action Buttons */}
+              <div className="space-y-4">
+                <button
+                  onClick={refreshVotingList}
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700
+                           text-white font-medium py-4 px-6 rounded-xl transition-all duration-200
+                           shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+                >
+                  <span className="text-xl">🔄</span>
+                  Refresh & Check for New Photos
+                </button>
+
+                <button
+                  onClick={() => setViewMode('gallery')}
+                  className="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-xl transition-colors"
+                >
+                  Back to Gallery
+                </button>
+              </div>
+            </div>
+          </div>
+        )
       )}
 
       {/* Refresh Button */}
