@@ -4,19 +4,26 @@ import { supabase } from '../lib/supabase'
 export async function testSupabaseConnection() {
   try {
     console.log('🔍 Testing Supabase connection...')
+
+    // Debug: Log Supabase configuration
+    console.log('🔧 Supabase URL:', import.meta.env.VITE_SUPABASE_URL)
+    console.log('🔧 Supabase Key (first 20 chars):', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 20) + '...')
     
-    // Test 1: Basic connection
-    const { error } = await supabase
+    // Test 1: Basic connection with raw query
+    console.log('🔍 Testing basic table access...')
+    const { data: rawData, error: rawError } = await supabase
       .from('events')
-      .select('count')
+      .select('*')
       .limit(1)
-    
-    if (error) {
-      console.error('❌ Supabase connection failed:', error)
+
+    if (rawError) {
+      console.error('❌ Raw events query failed:', rawError)
+      console.error('❌ Error details:', JSON.stringify(rawError, null, 2))
       return false
     }
-    
-    console.log('✅ Supabase connection successful!')
+
+    console.log('✅ Raw events query successful!')
+    console.log('📊 Raw data:', rawData)
     
     // Test 2: Check if award_categories table exists and has data
     const { data: categories, error: categoriesError } = await supabase
@@ -32,10 +39,62 @@ export async function testSupabaseConnection() {
     console.log('✅ Award categories table accessible!')
     console.log('📊 Sample categories:', categories)
     
-    // Test 3: Test event table access (read-only test to avoid cache issues)
+    // Test 3: Test event table access with minimal query first
+    console.log('🔍 Testing events table with minimal query...')
+    const { data: eventCount, error: countError } = await supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+
+    if (countError) {
+      console.error('❌ Events table count failed:', countError)
+      return false
+    }
+
+    console.log('✅ Events table count successful!')
+
+    // Test 4: Test specific columns one by one to isolate the issue
+    console.log('🔍 Testing individual columns...')
+
+    // Test id column
+    const { data: idTest, error: idError } = await supabase
+      .from('events')
+      .select('id')
+      .limit(1)
+
+    if (idError) {
+      console.error('❌ ID column test failed:', idError)
+      return false
+    }
+    console.log('✅ ID column accessible')
+
+    // Test title column specifically
+    const { data: titleTest, error: titleError } = await supabase
+      .from('events')
+      .select('title')
+      .limit(1)
+
+    if (titleError) {
+      console.error('❌ Title column test failed:', titleError)
+      return false
+    }
+    console.log('✅ Title column accessible')
+
+    // Test event_code column
+    const { data: codeTest, error: codeError } = await supabase
+      .from('events')
+      .select('event_code')
+      .limit(1)
+
+    if (codeError) {
+      console.error('❌ Event code column test failed:', codeError)
+      return false
+    }
+    console.log('✅ Event code column accessible')
+
+    // Test all columns together
     const { data: existingEvents, error: eventsError } = await supabase
       .from('events')
-      .select('id, title, event_code, created_by')
+      .select('id, title, event_code, status')
       .limit(1)
 
     if (eventsError) {

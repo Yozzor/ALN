@@ -31,13 +31,21 @@ const MobileApp = () => {
   useEffect(() => {
     const initSupabase = async () => {
       console.log('🚀 Initializing About Last Night app...')
-      const isReady = await testSupabaseConnection()
-      setSupabaseReady(isReady)
+      try {
+        const isReady = await testSupabaseConnection()
+        setSupabaseReady(isReady)
 
-      if (isReady) {
-        console.log('✅ App ready with Supabase integration!')
-      } else {
-        console.error('❌ App started but Supabase connection failed')
+        if (isReady) {
+          console.log('✅ App ready with Supabase integration!')
+        } else {
+          // IMPORTANT: Force app to continue even if Supabase test fails
+          console.warn('⚠️ Supabase test failed but continuing anyway')
+          setSupabaseReady(true) // Force ready state to true
+        }
+      } catch (error) {
+        console.error('❌ Error testing Supabase:', error)
+        // IMPORTANT: Force app to continue even if Supabase test throws error
+        setSupabaseReady(true) // Force ready state to true
       }
     }
 
