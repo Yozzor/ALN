@@ -8,6 +8,18 @@ export async function testSupabaseConnection() {
     // Debug: Log Supabase configuration
     console.log('🔧 Supabase URL:', import.meta.env.VITE_SUPABASE_URL)
     console.log('🔧 Supabase Key (first 20 chars):', import.meta.env.VITE_SUPABASE_ANON_KEY?.substring(0, 20) + '...')
+    console.log('🔧 Expected URL: https://getikieipnbjliyopiiq.supabase.co')
+    console.log('🔧 URL Match:', import.meta.env.VITE_SUPABASE_URL === 'https://getikieipnbjliyopiiq.supabase.co')
+
+    // Check if environment variables are missing
+    if (!import.meta.env.VITE_SUPABASE_URL) {
+      console.error('❌ VITE_SUPABASE_URL is missing!')
+      return false
+    }
+    if (!import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      console.error('❌ VITE_SUPABASE_ANON_KEY is missing!')
+      return false
+    }
     
     // Test 1: Basic connection with raw query
     console.log('🔍 Testing basic table access...')
@@ -38,6 +50,17 @@ export async function testSupabaseConnection() {
     
     console.log('✅ Award categories table accessible!')
     console.log('📊 Sample categories:', categories)
+
+    // Test: Check which Supabase project we're actually connected to
+    console.log('🔍 Checking Supabase project connection...')
+    const { data: projectInfo, error: projectError } = await supabase
+      .from('award_categories')
+      .select('id, name')
+      .limit(1)
+
+    if (projectInfo && projectInfo.length > 0) {
+      console.log('📋 Connected to project with award category:', projectInfo[0])
+    }
     
     // Test 3: Test event table access with minimal query first
     console.log('🔍 Testing events table with minimal query...')
