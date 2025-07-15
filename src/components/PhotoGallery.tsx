@@ -222,11 +222,11 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       </div>
 
       {/* Header */}
-      <div className="relative z-10 glass border-b border-border-primary/30 p-6">
+      <div className="relative z-10 glass border-b border-border-primary/30 p-4 sm:p-6">
         <div className="max-w-6xl mx-auto">
           {/* Title and Photo Count - Top Section */}
-          <div className="text-center mb-6 animate-slide-up">
-            <h1 className="text-text-primary font-light text-3xl mb-2 tracking-wide">
+          <div className="text-center mb-4 animate-slide-up">
+            <h1 className="text-text-primary font-light text-2xl sm:text-3xl mb-2 tracking-wide">
               Photo Gallery
             </h1>
             <p className="text-text-tertiary text-sm font-light">
@@ -240,13 +240,13 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
           </div>
 
           {/* Control Panel - Below Title */}
-          <div className="flex items-center justify-center gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
             {/* View Mode Toggle */}
             {activeUserName && viewMode === 'gallery' && (
               <div className="flex bg-surface-card rounded-lg border border-border-primary overflow-hidden shadow-sm">
                 <button
                   onClick={() => setShowAllUsers(false)}
-                  className={`px-6 py-3 text-sm font-medium tracking-wide transition-all duration-300 ${
+                  className={`px-4 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 ${
                     !showAllUsers
                       ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-sm'
                       : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
@@ -256,7 +256,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                 </button>
                 <button
                   onClick={() => setShowAllUsers(true)}
-                  className={`px-6 py-3 text-sm font-medium tracking-wide transition-all duration-300 ${
+                  className={`px-4 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 ${
                     showAllUsers
                       ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-sm'
                       : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
@@ -272,8 +272,8 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               <button
                 onClick={startVoting}
                 className="bg-gradient-to-r from-accent-orange-500 to-accent-orange-600 hover:from-accent-orange-600 hover:to-accent-orange-700
-                           text-white px-6 py-3 rounded-lg font-medium tracking-wide transition-all duration-300
-                           hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 shadow-sm"
+                           text-white px-4 py-2.5 rounded-lg font-medium tracking-wide transition-all duration-300
+                           hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 shadow-sm whitespace-nowrap"
               >
                 <span className="text-lg">🗳️</span>
                 Start Voting
@@ -285,8 +285,8 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               <button
                 onClick={() => setViewMode('gallery')}
                 className="bg-surface-card hover:bg-surface-hover border border-border-primary text-text-primary
-                           px-6 py-3 rounded-lg font-medium tracking-wide transition-all duration-300
-                           hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 shadow-sm"
+                           px-4 py-2.5 rounded-lg font-medium tracking-wide transition-all duration-300
+                           hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 shadow-sm whitespace-nowrap"
               >
                 <span className="text-lg">📸</span>
                 Back to Gallery
