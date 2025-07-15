@@ -21,6 +21,7 @@ interface FloatingEmoji {
   x: number
   y: number
   delay: number
+  driftX: number // Horizontal drift for bubble effect
 }
 
 // Award categories for voting
@@ -46,7 +47,12 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const [viewMode, setViewMode] = useState<'gallery' | 'voting'>('gallery')
   const [currentVotingPhoto, setCurrentVotingPhoto] = useState<Photo | null>(null)
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([])
-  const [votedPhotoUrls, setVotedPhotoUrls] = useState<Set<string>>(new Set())
+  const [votedPhotoUrls, setVotedPhotoUrls] = useState<Set<string>>(() => {
+    // Load voted photos from localStorage on init
+    const saved = localStorage.getItem('aln-voted-photos')
+    return saved ? new Set(JSON.parse(saved)) : new Set()
+  })
+  const [isVoting, setIsVoting] = useState(false) // Prevent rapid clicking
 
   // Get user from URL params or session data
   const [searchParams] = useSearchParams()
@@ -112,13 +118,24 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     setCurrentVotingPhoto(getRandomVotingPhoto())
   }
 
-  // Vote for a photo
+  // Vote for a photo with debouncing
   const voteForPhoto = async (photoUrl: string, category: string) => {
+    // Prevent rapid clicking
+    if (isVoting) {
+      console.log('🚫 Vote blocked - already voting')
+      return
+    }
+
     try {
+      setIsVoting(true)
       console.log(`🗳️ Voting for photo: ${photoUrl} in category: ${category}`)
 
-      // Mark this photo as voted
-      setVotedPhotoUrls(prev => new Set([...prev, photoUrl]))
+      // Mark this photo as voted and save to localStorage
+      setVotedPhotoUrls(prev => {
+        const updated = new Set([...prev, photoUrl])
+        localStorage.setItem('aln-voted-photos', JSON.stringify([...updated]))
+        return updated
+      })
 
       // Find the category to get the emoji
       const selectedCategory = AWARD_CATEGORIES.find(cat => cat.id === category)
@@ -130,13 +147,15 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       // TODO: Save vote to Supabase when event system is implemented
       // For now, just log the vote
 
-      // Show next random photo after a short delay to see the animation
+      // Show next random photo after animation starts
       setTimeout(() => {
         setCurrentVotingPhoto(getRandomVotingPhoto())
-      }, 500)
+        setIsVoting(false) // Re-enable voting
+      }, 1000) // Increased delay to see animation better
 
     } catch (error) {
       console.error('Failed to vote:', error)
+      setIsVoting(false) // Re-enable voting on error
     }
   }
 
@@ -145,30 +164,40 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     setCurrentVotingPhoto(getRandomVotingPhoto())
   }
 
-  // Refresh voting list (clear voted photos and fetch new ones)
+  // Refresh voting list (fetch new photos but keep voted history)
   const refreshVotingList = async () => {
-    setVotedPhotoUrls(new Set())
+    console.log('🔄 Refreshing photo list (keeping voted history)')
     await fetchPhotos()
     // After photos are fetched, get a new random photo
     setTimeout(() => {
       const newPhoto = getRandomVotingPhoto()
       setCurrentVotingPhoto(newPhoto)
+      if (!newPhoto) {
+        console.log('📷 Still no new photos to vote on after refresh')
+      }
     }, 100)
   }
 
-  // Create floating emoji animation
+  // Create floating emoji animation with bubble-like effect
   const createFloatingEmojis = (emoji: string) => {
     console.log(`🎆 Creating floating emojis for: ${emoji}`)
     const newEmojis: FloatingEmoji[] = []
-    const emojiCount = 8 + Math.floor(Math.random() * 5) // 8-12 emojis
+    const emojiCount = 10 + Math.floor(Math.random() * 6) // 10-15 emojis
 
     for (let i = 0; i < emojiCount; i++) {
+      // Create more natural distribution across screen width
+      const xPos = 10 + Math.random() * 80 // Keep emojis within 10-90% of screen width
+
+      // Random horizontal drift for bubble effect (-20px to +20px)
+      const drift = (Math.random() * 40 - 20)
+
       newEmojis.push({
         id: `${Date.now()}-${i}`,
         emoji,
-        x: Math.random() * 100, // Random x position (0-100%)
+        x: xPos, // Random x position (10-90%)
         y: 0, // Start from bottom of screen (bottom: 0%)
-        delay: i * 100 // Stagger the animations
+        delay: i * (50 + Math.random() * 100), // Randomized staggered delay (50-150ms)
+        driftX: drift // Horizontal drift for bubble effect
       })
     }
 
@@ -183,7 +212,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     setTimeout(() => {
       console.log(`🎆 Removing emojis after animation`)
       setFloatingEmojis(prev => prev.filter(e => !newEmojis.some(ne => ne.id === e.id)))
-    }, 3000)
+    }, 4500) // Increased to match longer animation duration
   }
 
   // Keyboard navigation for modal
@@ -682,7 +711,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                            shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
                 >
                   <span className="text-xl">🔄</span>
-                  Refresh & Check for New Photos
+                  Check for New Photos
                 </button>
 
                 <button
@@ -833,10 +862,11 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
           style={{
             left: `${emoji.x}%`,
             bottom: `${emoji.y}%`,
-            animationDelay: `${emoji.delay}ms`
-          }}
+            animationDelay: `${emoji.delay}ms`,
+            '--drift-x': `${emoji.driftX}px`
+          } as React.CSSProperties & { '--drift-x': string }}
         >
-          <div className="text-4xl">
+          <div className="text-4xl drop-shadow-lg">
             {emoji.emoji}
           </div>
         </div>
