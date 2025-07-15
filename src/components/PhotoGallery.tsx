@@ -130,6 +130,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
   // Create floating emoji animation
   const createFloatingEmojis = (emoji: string) => {
+    console.log(`🎆 Creating floating emojis for: ${emoji}`)
     const newEmojis: FloatingEmoji[] = []
     const emojiCount = 8 + Math.floor(Math.random() * 5) // 8-12 emojis
 
@@ -143,10 +144,16 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       })
     }
 
-    setFloatingEmojis(prev => [...prev, ...newEmojis])
+    console.log(`🎆 Adding ${newEmojis.length} emojis to state`)
+    setFloatingEmojis(prev => {
+      const updated = [...prev, ...newEmojis]
+      console.log(`🎆 Total floating emojis now: ${updated.length}`)
+      return updated
+    })
 
     // Remove emojis after animation completes
     setTimeout(() => {
+      console.log(`🎆 Removing emojis after animation`)
       setFloatingEmojis(prev => prev.filter(e => !newEmojis.some(ne => ne.id === e.id)))
     }, 3000)
   }
@@ -566,9 +573,9 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
       {/* Voting Interface */}
       {viewMode === 'voting' && currentVotingPhoto && (
-        <div className="fixed inset-0 bg-black z-[90] flex flex-col">
+        <div className="fixed inset-0 bg-black z-[90] flex flex-col overflow-y-auto">
           {/* Voting Photo */}
-          <div className="flex-1 relative flex items-center justify-center p-4">
+          <div className="flex-shrink-0 relative flex items-center justify-center p-4 min-h-[50vh] max-h-[60vh]">
             <img
               src={currentVotingPhoto.url}
               alt={`Photo by ${currentVotingPhoto.userName}`}
@@ -587,17 +594,20 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
             </div>
           </div>
 
-          {/* Award Category Buttons */}
-          <div className="bg-black/90 backdrop-blur-sm p-4">
+          {/* Award Category Buttons - Scrollable */}
+          <div className="flex-shrink-0 bg-black/90 backdrop-blur-sm p-4 pb-8">
             <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 gap-3 mb-4">
                 {AWARD_CATEGORIES.map((category) => (
                   <button
                     key={category.id}
-                    onClick={() => voteForPhoto(currentVotingPhoto.url, category.id)}
+                    onClick={() => {
+                      console.log(`🎯 Button clicked for category: ${category.id}`)
+                      voteForPhoto(currentVotingPhoto.url, category.id)
+                    }}
                     className={`bg-gradient-to-r ${category.color} hover:scale-105 active:scale-95
                                text-white font-medium py-4 px-3 rounded-xl transition-all duration-200
-                               shadow-lg hover:shadow-xl flex flex-col items-center gap-1`}
+                               shadow-lg hover:shadow-xl flex flex-col items-center gap-1 min-h-[80px]`}
                   >
                     <span className="text-3xl">{category.emoji}</span>
                     <span className="text-xs text-center leading-tight">{category.label}</span>
@@ -606,7 +616,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               </div>
 
               {/* Quick Actions */}
-              <div className="flex justify-center gap-4 mt-4">
+              <div className="flex justify-center gap-4">
                 <button
                   onClick={skipPhoto}
                   className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors text-sm"
@@ -744,6 +754,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       )}
 
       {/* Floating Emojis Animation */}
+      {floatingEmojis.length > 0 && console.log(`🎆 Rendering ${floatingEmojis.length} floating emojis`)}
       {floatingEmojis.map((emoji) => (
         <div
           key={emoji.id}
