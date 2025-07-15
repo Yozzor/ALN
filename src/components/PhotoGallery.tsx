@@ -222,11 +222,11 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       </div>
 
       {/* Header */}
-      <div className="relative z-10 glass border-b border-border-primary/30 p-8">
+      <div className="relative z-10 glass border-b border-border-primary/30 p-6">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6">
             <div className="animate-slide-up">
-              <h1 className="text-text-primary font-light text-2xl mb-4 tracking-wide">
+              <h1 className="text-text-primary font-light text-3xl mb-2 tracking-wide">
                 Photo Gallery
               </h1>
               <p className="text-text-tertiary text-sm font-light">
@@ -240,15 +240,15 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
             </div>
 
             {/* Control Panel */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {/* View Mode Toggle */}
               {activeUserName && viewMode === 'gallery' && (
-                <div className="flex bg-surface-card rounded-xl border border-border-primary overflow-hidden">
+                <div className="flex bg-surface-card rounded-lg border border-border-primary overflow-hidden shadow-sm">
                   <button
                     onClick={() => setShowAllUsers(false)}
-                    className={`px-4 py-2 text-sm font-medium tracking-wide transition-all duration-300 ${
+                    className={`px-5 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 ${
                       !showAllUsers
-                        ? 'bg-primary-500 text-white'
+                        ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-sm'
                         : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
                     }`}
                   >
@@ -256,9 +256,9 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                   </button>
                   <button
                     onClick={() => setShowAllUsers(true)}
-                    className={`px-4 py-2 text-sm font-medium tracking-wide transition-all duration-300 ${
+                    className={`px-5 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 ${
                       showAllUsers
-                        ? 'bg-primary-500 text-white'
+                        ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-sm'
                         : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
                     }`}
                   >
@@ -271,7 +271,9 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               {viewMode === 'gallery' && photos.length > 0 && (
                 <button
                   onClick={startVoting}
-                  className="btn-primary flex items-center gap-3 font-medium tracking-wide"
+                  className="bg-gradient-to-r from-accent-orange-500 to-accent-orange-600 hover:from-accent-orange-600 hover:to-accent-orange-700
+                             text-white px-5 py-2.5 rounded-lg font-medium tracking-wide transition-all duration-300
+                             hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 shadow-sm"
                 >
                   <span className="text-lg">🗳️</span>
                   Start Voting
@@ -282,7 +284,9 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               {viewMode === 'voting' && (
                 <button
                   onClick={() => setViewMode('gallery')}
-                  className="btn-secondary flex items-center gap-3 font-medium tracking-wide"
+                  className="bg-surface-card hover:bg-surface-hover border border-border-primary text-text-primary
+                             px-5 py-2.5 rounded-lg font-medium tracking-wide transition-all duration-300
+                             hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 shadow-sm"
                 >
                   <span className="text-lg">📸</span>
                   Back to Gallery
@@ -296,7 +300,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
             <a
               href="/"
               className="inline-flex items-center text-primary-400 hover:text-primary-300 transition-all duration-300
-                         hover:-translate-x-1 group font-light tracking-wide"
+                         hover:-translate-x-1 group font-medium tracking-wide text-sm"
             >
               <span className="mr-2 group-hover:mr-3 transition-all duration-300">←</span>
               Back to Camera
@@ -308,37 +312,103 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       {/* Photos Grid */}
       <div className="relative z-10 max-w-6xl mx-auto p-6">
         {photos.length === 0 ? (
-          <div className="text-center py-24 animate-fade-in">
-            <div className="w-16 h-16 bg-surface-hover rounded-2xl flex items-center justify-center mx-auto mb-8 border border-border-primary">
-              <div className="w-8 h-8 bg-text-primary rounded opacity-20"></div>
+          <div className="text-center py-20 animate-fade-in">
+            {/* Enhanced Camera Icon */}
+            <div className="relative mx-auto mb-8 w-24 h-24">
+              {/* Gradient background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-accent-orange-500/20 rounded-3xl blur-xl"></div>
+
+              {/* Icon container */}
+              <div className="relative w-24 h-24 bg-gradient-to-br from-surface-card to-surface-hover rounded-3xl
+                              flex items-center justify-center border border-border-primary shadow-lg">
+                {/* Camera Icon */}
+                <div className="relative">
+                  {/* Camera body */}
+                  <div className="w-12 h-8 bg-gradient-to-b from-text-primary/60 to-text-primary/40 rounded-lg relative">
+                    {/* Lens */}
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
+                                    w-6 h-6 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full border-2 border-white/20">
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
+                                      w-3 h-3 bg-gradient-to-br from-primary-300 to-primary-500 rounded-full"></div>
+                    </div>
+                    {/* Flash */}
+                    <div className="absolute -top-1 left-2 w-2 h-1 bg-accent-orange-400 rounded-sm"></div>
+                    {/* Viewfinder */}
+                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-3 h-2 bg-text-primary/50 rounded-t"></div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h3 className="text-text-primary font-light text-xl mb-6 tracking-wide">
-              {showAllUsers ? 'No Photos Yet' : activeUserName ? `No Photos by ${activeUserName}` : 'No Photos Yet'}
-            </h3>
-            <p className="text-text-tertiary text-base mb-10 max-w-md mx-auto font-light leading-relaxed">
-              {showAllUsers
-                ? 'Photos uploaded through the app will appear here'
-                : activeUserName
-                  ? 'Take some photos with the camera to see them here'
-                  : 'Photos uploaded through the app will appear here'
-              }
-            </p>
-            {!showAllUsers && activeUserName && (
-              <button
-                onClick={() => setShowAllUsers(true)}
-                className="btn-ghost font-light tracking-wide"
-              >
-                View all users' photos →
-              </button>
-            )}
+
+            {/* Enhanced messaging */}
+            <div className="max-w-lg mx-auto">
+              <h3 className="text-text-primary font-medium text-2xl mb-4 tracking-wide">
+                {showAllUsers ? 'No Photos Yet' : activeUserName ? `No Photos by ${activeUserName}` : 'No Photos Yet'}
+              </h3>
+              <p className="text-text-secondary text-lg mb-8 font-light leading-relaxed">
+                {showAllUsers
+                  ? 'Be the first to capture and share a moment! Photos uploaded through the app will appear here.'
+                  : activeUserName
+                    ? 'Ready to capture some amazing moments? Head to the camera and start taking photos!'
+                    : 'Photos uploaded through the app will appear here. Start capturing memories!'
+                }
+              </p>
+
+              {/* Action buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                {!activeUserName ? (
+                  <a
+                    href="/"
+                    className="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700
+                               text-white px-8 py-3 rounded-xl font-medium tracking-wide transition-all duration-300
+                               hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-3"
+                  >
+                    <span className="text-xl">📸</span>
+                    Start Taking Photos
+                  </a>
+                ) : !showAllUsers ? (
+                  <>
+                    <a
+                      href="/"
+                      className="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700
+                                 text-white px-8 py-3 rounded-xl font-medium tracking-wide transition-all duration-300
+                                 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-3"
+                    >
+                      <span className="text-xl">📸</span>
+                      Take Your First Photo
+                    </a>
+                    <button
+                      onClick={() => setShowAllUsers(true)}
+                      className="bg-surface-card hover:bg-surface-hover border border-border-primary text-text-primary
+                                 px-6 py-3 rounded-xl font-medium tracking-wide transition-all duration-300
+                                 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
+                    >
+                      <span className="text-lg">👥</span>
+                      View All Photos
+                    </button>
+                  </>
+                ) : (
+                  <a
+                    href="/"
+                    className="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700
+                               text-white px-8 py-3 rounded-xl font-medium tracking-wide transition-all duration-300
+                               hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-3"
+                  >
+                    <span className="text-xl">📸</span>
+                    Add Your Photos
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {photos.map((photo, index) => (
               <div
                 key={index}
-                className="card hover:card-elevated transition-all duration-300 overflow-hidden group
-                           hover:-translate-y-2 hover:shadow-glow animate-fade-in"
+                className="bg-gradient-to-br from-surface-card to-surface-hover hover:from-surface-hover hover:to-surface-tertiary
+                           border border-border-primary rounded-2xl overflow-hidden group transition-all duration-300
+                           hover:-translate-y-2 hover:shadow-xl shadow-lg animate-fade-in"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div
@@ -348,18 +418,25 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                   <img
                     src={photo.url}
                     alt={`Photo by ${photo.userName}`}
-                    className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent
                                   opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                   {/* Hover overlay with actions */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                     <div className="flex gap-3">
                       {/* View button */}
-                      <div className="bg-black/50 backdrop-blur-sm rounded-full p-3 hover:bg-black/70 transition-colors">
-                        <div className="w-5 h-5 bg-white rounded opacity-80"></div>
+                      <div className="bg-white/20 backdrop-blur-md rounded-full p-3 hover:bg-white/30 transition-all duration-200
+                                      border border-white/20 hover:scale-110">
+                        <div className="w-5 h-5 relative">
+                          {/* Eye icon */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-4 h-2.5 border-2 border-white rounded-full"></div>
+                            <div className="absolute w-2 h-2 bg-white rounded-full"></div>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Download button */}
@@ -368,7 +445,8 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                           e.stopPropagation()
                           downloadPhoto(photo)
                         }}
-                        className="bg-black/50 backdrop-blur-sm rounded-full p-3 hover:bg-black/70 transition-colors"
+                        className="bg-white/20 backdrop-blur-md rounded-full p-3 hover:bg-white/30 transition-all duration-200
+                                   border border-white/20 hover:scale-110"
                         title="Download photo"
                       >
                         <div className="w-5 h-5 relative">
@@ -385,23 +463,33 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                 </div>
                 <div className="p-5">
                   <div className="flex items-center mb-3">
-                    <div className="w-6 h-6 bg-surface-hover rounded-full flex items-center justify-center mr-3 border border-border-primary">
-                      <div className="w-3 h-3 bg-text-primary rounded-full opacity-40"></div>
+                    <div className="w-8 h-8 bg-gradient-to-br from-primary-500/20 to-accent-orange-500/20 rounded-full
+                                    flex items-center justify-center mr-3 border border-border-primary">
+                      <div className="w-4 h-4 bg-gradient-to-br from-primary-400 to-accent-orange-400 rounded-full"></div>
                     </div>
                     <p className="text-text-primary font-medium text-sm truncate tracking-wide">
                       {photo.userName}
                     </p>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-text-tertiary text-xs font-light">
-                      {new Date(photo.uploadedAt).toLocaleDateString()}
-                    </p>
-                    <p className="text-text-tertiary text-xs font-light">
-                      {new Date(photo.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                    <p className="text-text-tertiary text-xs font-light">
-                      {Math.round(photo.size / 1024)}KB
-                    </p>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs">📅</span>
+                      <p className="text-text-tertiary text-xs font-light">
+                        {new Date(photo.uploadedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs">🕒</span>
+                      <p className="text-text-tertiary text-xs font-light">
+                        {new Date(photo.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs">📁</span>
+                      <p className="text-text-tertiary text-xs font-light">
+                        {Math.round(photo.size / 1024)}KB
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -482,12 +570,18 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       <div className="fixed bottom-8 right-8 z-50">
         <button
           onClick={fetchPhotos}
-          className="group bg-surface-card hover:bg-surface-hover border border-border-primary
-                     text-text-primary p-4 rounded-xl shadow-premium hover:shadow-premium-lg transition-all duration-300
-                     hover:-translate-y-1 active:translate-y-0 backdrop-blur-sm"
+          className="group bg-gradient-to-br from-surface-card to-surface-hover hover:from-surface-hover hover:to-surface-tertiary
+                     border border-border-primary text-text-primary p-4 rounded-2xl shadow-lg hover:shadow-xl
+                     transition-all duration-300 hover:-translate-y-1 active:translate-y-0 backdrop-blur-sm"
           title="Refresh photos"
         >
-          <div className="w-5 h-5 bg-text-primary opacity-60 rounded-sm group-hover:rotate-180 transition-transform duration-500"></div>
+          {/* Refresh Icon */}
+          <div className="relative w-5 h-5">
+            <div className="absolute inset-0 border-2 border-text-primary/60 rounded-full border-t-transparent
+                            group-hover:rotate-180 transition-transform duration-500"></div>
+            <div className="absolute top-0 right-0 w-2 h-2 border-l-2 border-b-2 border-text-primary/60
+                            rotate-45 transform translate-x-0.5 -translate-y-0.5"></div>
+          </div>
         </button>
       </div>
 
