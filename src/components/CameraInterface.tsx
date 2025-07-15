@@ -151,23 +151,7 @@ const CameraInterface = ({
           </div>
         </div>
 
-        {/* Bottom Row - Gallery Button Only */}
-        <div className="flex items-center">
-          {/* Gallery Button */}
-          <a
-            href={`/gallery?user=${encodeURIComponent(userName)}`}
-            className="group bg-surface-card hover:bg-surface-hover border border-border-primary
-                       text-text-primary px-4 py-2.5 rounded-lg shadow-premium hover:shadow-premium-lg
-                       transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 backdrop-blur-sm
-                       flex items-center gap-2 min-w-0 flex-shrink-0"
-            title="View Your Gallery"
-          >
-            <div className="w-3.5 h-3.5 bg-text-primary opacity-60 rounded-sm flex-shrink-0"></div>
-            <span className="text-sm font-medium tracking-wide">
-              Gallery
-            </span>
-          </a>
-        </div>
+
       </div>
 
       {/* Premium Success Message */}

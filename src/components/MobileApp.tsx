@@ -139,6 +139,22 @@ const MobileApp = () => {
         )}
       </div>
 
+      {/* Premium Gallery Link - Fixed position */}
+      <div className="fixed top-6 right-6 z-50">
+        <a
+          href={`/gallery${userName ? `?user=${encodeURIComponent(userName)}` : ''}`}
+          className="group bg-surface-card hover:bg-surface-hover border border-border-primary
+                     text-text-primary px-4 py-2.5 rounded-lg shadow-premium hover:shadow-premium-lg transition-all duration-300
+                     hover:-translate-y-0.5 active:translate-y-0 backdrop-blur-sm flex items-center gap-2"
+          title="View Gallery"
+        >
+          <div className="w-3.5 h-3.5 bg-text-primary opacity-60 rounded-sm flex-shrink-0"></div>
+          <span className="text-sm font-medium tracking-wide">
+            Gallery
+          </span>
+        </a>
+      </div>
+
 
 
       {/* Ambient lighting effects */}
