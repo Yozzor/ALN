@@ -224,79 +224,78 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       {/* Header */}
       <div className="relative z-10 glass border-b border-border-primary/30 p-6">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div className="animate-slide-up">
-              <h1 className="text-text-primary font-light text-3xl mb-2 tracking-wide">
-                Photo Gallery
-              </h1>
-              <p className="text-text-tertiary text-sm font-light">
-                {showAllUsers
-                  ? `${photos.length} photos from all users`
-                  : activeUserName
-                    ? `${photos.length} photos by ${activeUserName}`
-                    : `${photos.length} photos uploaded`
-                }
-              </p>
-            </div>
+          {/* Title and Photo Count - Top Section */}
+          <div className="text-center mb-6 animate-slide-up">
+            <h1 className="text-text-primary font-light text-3xl mb-2 tracking-wide">
+              Photo Gallery
+            </h1>
+            <p className="text-text-tertiary text-sm font-light">
+              {showAllUsers
+                ? `${photos.length} photos from all users`
+                : activeUserName
+                  ? `${photos.length} photos by ${activeUserName}`
+                  : `${photos.length} photos uploaded`
+              }
+            </p>
+          </div>
 
-            {/* Control Panel */}
-            <div className="flex items-center gap-3">
-              {/* View Mode Toggle */}
-              {activeUserName && viewMode === 'gallery' && (
-                <div className="flex bg-surface-card rounded-lg border border-border-primary overflow-hidden shadow-sm">
-                  <button
-                    onClick={() => setShowAllUsers(false)}
-                    className={`px-5 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 ${
-                      !showAllUsers
-                        ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-sm'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-                    }`}
-                  >
-                    My Photos
-                  </button>
-                  <button
-                    onClick={() => setShowAllUsers(true)}
-                    className={`px-5 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 ${
-                      showAllUsers
-                        ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-sm'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-                    }`}
-                  >
-                    All Photos
-                  </button>
-                </div>
-              )}
-
-              {/* Start Voting Button */}
-              {viewMode === 'gallery' && photos.length > 0 && (
+          {/* Control Panel - Below Title */}
+          <div className="flex items-center justify-center gap-4 mb-6">
+            {/* View Mode Toggle */}
+            {activeUserName && viewMode === 'gallery' && (
+              <div className="flex bg-surface-card rounded-lg border border-border-primary overflow-hidden shadow-sm">
                 <button
-                  onClick={startVoting}
-                  className="bg-gradient-to-r from-accent-orange-500 to-accent-orange-600 hover:from-accent-orange-600 hover:to-accent-orange-700
-                             text-white px-5 py-2.5 rounded-lg font-medium tracking-wide transition-all duration-300
-                             hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 shadow-sm"
+                  onClick={() => setShowAllUsers(false)}
+                  className={`px-6 py-3 text-sm font-medium tracking-wide transition-all duration-300 ${
+                    !showAllUsers
+                      ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-sm'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                  }`}
                 >
-                  <span className="text-lg">🗳️</span>
-                  Start Voting
+                  My Photos
                 </button>
-              )}
-
-              {/* Back to Gallery Button */}
-              {viewMode === 'voting' && (
                 <button
-                  onClick={() => setViewMode('gallery')}
-                  className="bg-surface-card hover:bg-surface-hover border border-border-primary text-text-primary
-                             px-5 py-2.5 rounded-lg font-medium tracking-wide transition-all duration-300
-                             hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 shadow-sm"
+                  onClick={() => setShowAllUsers(true)}
+                  className={`px-6 py-3 text-sm font-medium tracking-wide transition-all duration-300 ${
+                    showAllUsers
+                      ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-sm'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                  }`}
                 >
-                  <span className="text-lg">📸</span>
-                  Back to Gallery
+                  All Photos
                 </button>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Start Voting Button */}
+            {viewMode === 'gallery' && photos.length > 0 && (
+              <button
+                onClick={startVoting}
+                className="bg-gradient-to-r from-accent-orange-500 to-accent-orange-600 hover:from-accent-orange-600 hover:to-accent-orange-700
+                           text-white px-6 py-3 rounded-lg font-medium tracking-wide transition-all duration-300
+                           hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 shadow-sm"
+              >
+                <span className="text-lg">🗳️</span>
+                Start Voting
+              </button>
+            )}
+
+            {/* Back to Gallery Button */}
+            {viewMode === 'voting' && (
+              <button
+                onClick={() => setViewMode('gallery')}
+                className="bg-surface-card hover:bg-surface-hover border border-border-primary text-text-primary
+                           px-6 py-3 rounded-lg font-medium tracking-wide transition-all duration-300
+                           hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 shadow-sm"
+              >
+                <span className="text-lg">📸</span>
+                Back to Gallery
+              </button>
+            )}
           </div>
 
           {/* Back to App Link */}
-          <div>
+          <div className="text-center">
             <a
               href="/"
               className="inline-flex items-center text-primary-400 hover:text-primary-300 transition-all duration-300
