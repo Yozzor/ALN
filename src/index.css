@@ -122,4 +122,28 @@
   .status-busy {
     @apply bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)];
   }
+
+  /* Floating emoji animation */
+  @keyframes floatUp {
+    0% {
+      transform: translateY(0) scale(0.5);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+      transform: translateY(-20px) scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: translateY(-100px) scale(1.2);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-200px) scale(0.8);
+    }
+  }
+
+  .float-up {
+    animation: floatUp 3s ease-out forwards;
+  }
 }

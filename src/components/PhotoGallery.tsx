@@ -14,6 +14,15 @@ interface PhotoGalleryProps {
   currentUser?: string | null
 }
 
+// Floating emoji animation interface
+interface FloatingEmoji {
+  id: string
+  emoji: string
+  x: number
+  y: number
+  delay: number
+}
+
 // Award categories for voting
 const AWARD_CATEGORIES = [
   { id: 'most_emotional', label: 'Most Emotional', emoji: '😭', color: 'from-blue-500 to-purple-500' },
@@ -36,6 +45,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
   const [viewMode, setViewMode] = useState<'gallery' | 'voting'>('gallery')
   const [currentVotingPhoto, setCurrentVotingPhoto] = useState<Photo | null>(null)
+  const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([])
 
   // Get user from URL params or session data
   const [searchParams] = useSearchParams()
@@ -65,14 +75,20 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     try {
       console.log(`🗳️ Voting for photo: ${photoUrl} in category: ${category}`)
 
+      // Find the category to get the emoji
+      const selectedCategory = AWARD_CATEGORIES.find(cat => cat.id === category)
+      if (selectedCategory) {
+        // Trigger floating emoji animation
+        createFloatingEmojis(selectedCategory.emoji)
+      }
+
       // TODO: Save vote to Supabase when event system is implemented
       // For now, just log the vote
 
-      // Show next random photo
-      setCurrentVotingPhoto(getRandomVotingPhoto())
-
-      // Show success feedback
-      // TODO: Add toast notification
+      // Show next random photo after a short delay to see the animation
+      setTimeout(() => {
+        setCurrentVotingPhoto(getRandomVotingPhoto())
+      }, 500)
 
     } catch (error) {
       console.error('Failed to vote:', error)
@@ -82,6 +98,29 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   // Skip photo without voting
   const skipPhoto = () => {
     setCurrentVotingPhoto(getRandomVotingPhoto())
+  }
+
+  // Create floating emoji animation
+  const createFloatingEmojis = (emoji: string) => {
+    const newEmojis: FloatingEmoji[] = []
+    const emojiCount = 8 + Math.floor(Math.random() * 5) // 8-12 emojis
+
+    for (let i = 0; i < emojiCount; i++) {
+      newEmojis.push({
+        id: `${Date.now()}-${i}`,
+        emoji,
+        x: Math.random() * 100, // Random x position (0-100%)
+        y: 100, // Start from bottom
+        delay: i * 100 // Stagger the animations
+      })
+    }
+
+    setFloatingEmojis(prev => [...prev, ...newEmojis])
+
+    // Remove emojis after animation completes
+    setTimeout(() => {
+      setFloatingEmojis(prev => prev.filter(e => !newEmojis.some(ne => ne.id === e.id)))
+    }, 3000)
   }
 
   // Keyboard navigation for modal
@@ -508,14 +547,8 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               className="max-w-full max-h-full object-contain rounded-lg"
             />
 
-            {/* Photo Info Overlay */}
-            <div className="absolute top-6 left-6 right-6 flex justify-between items-start">
-              <div className="bg-black/70 backdrop-blur-sm rounded-xl p-4">
-                <p className="text-white font-medium">Photo by {currentVotingPhoto.userName}</p>
-                <p className="text-white/70 text-sm">{new Date(currentVotingPhoto.uploadedAt).toLocaleDateString()}</p>
-              </div>
-
-              {/* Skip Button */}
+            {/* Skip Button - Top Right Only */}
+            <div className="absolute top-6 right-6">
               <button
                 onClick={skipPhoto}
                 className="bg-black/70 backdrop-blur-sm rounded-xl p-3 text-white hover:bg-black/80 transition-colors"
@@ -527,37 +560,30 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
           </div>
 
           {/* Award Category Buttons */}
-          <div className="bg-black/90 backdrop-blur-sm p-6">
+          <div className="bg-black/90 backdrop-blur-sm p-4">
             <div className="max-w-4xl mx-auto">
-              <h3 className="text-white text-center mb-6 font-medium">Vote for this photo:</h3>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {AWARD_CATEGORIES.map((category) => (
                   <button
                     key={category.id}
                     onClick={() => voteForPhoto(currentVotingPhoto.url, category.id)}
                     className={`bg-gradient-to-r ${category.color} hover:scale-105 active:scale-95
-                               text-white font-medium py-3 px-4 rounded-xl transition-all duration-200
-                               shadow-lg hover:shadow-xl flex flex-col items-center gap-2`}
+                               text-white font-medium py-4 px-3 rounded-xl transition-all duration-200
+                               shadow-lg hover:shadow-xl flex flex-col items-center gap-1`}
                   >
-                    <span className="text-2xl">{category.emoji}</span>
+                    <span className="text-3xl">{category.emoji}</span>
                     <span className="text-xs text-center leading-tight">{category.label}</span>
                   </button>
                 ))}
               </div>
 
               {/* Quick Actions */}
-              <div className="flex justify-center gap-4 mt-6">
+              <div className="flex justify-center gap-4 mt-4">
                 <button
                   onClick={skipPhoto}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors"
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors text-sm"
                 >
                   Skip Photo
-                </button>
-                <button
-                  onClick={() => voteForPhoto(currentVotingPhoto.url, 'most_memorable')}
-                  className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:scale-105 text-white px-6 py-2 rounded-lg transition-all duration-200 font-medium"
-                >
-                  ⭐ Quick Vote
                 </button>
               </div>
             </div>
@@ -688,6 +714,23 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
           </div>
         </div>
       )}
+
+      {/* Floating Emojis Animation */}
+      {floatingEmojis.map((emoji) => (
+        <div
+          key={emoji.id}
+          className="fixed pointer-events-none z-[200] float-up"
+          style={{
+            left: `${emoji.x}%`,
+            bottom: `${emoji.y}%`,
+            animationDelay: `${emoji.delay}ms`
+          }}
+        >
+          <div className="text-4xl">
+            {emoji.emoji}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
