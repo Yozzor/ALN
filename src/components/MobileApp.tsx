@@ -144,16 +144,14 @@ const MobileApp = () => {
         <a
           href={`/gallery${userName ? `?user=${encodeURIComponent(userName)}` : ''}`}
           className="group bg-surface-card hover:bg-surface-hover border border-border-primary
-                     text-text-primary p-3 rounded-xl shadow-premium hover:shadow-premium-lg transition-all duration-300
-                     hover:-translate-y-1 active:translate-y-0 backdrop-blur-sm"
+                     text-text-primary px-4 py-2.5 rounded-lg shadow-premium hover:shadow-premium-lg transition-all duration-300
+                     hover:-translate-y-0.5 active:translate-y-0 backdrop-blur-sm flex items-center gap-2"
           title="View Gallery"
         >
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 bg-text-primary opacity-60 rounded-sm"></div>
-            <span className="text-sm font-medium hidden group-hover:inline-block transition-all duration-200 tracking-wide">
-              Gallery
-            </span>
-          </div>
+          <div className="w-3.5 h-3.5 bg-text-primary opacity-60 rounded-sm flex-shrink-0"></div>
+          <span className="text-sm font-medium tracking-wide">
+            Gallery
+          </span>
         </a>
       </div>
 
