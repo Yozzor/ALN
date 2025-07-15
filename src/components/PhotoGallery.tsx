@@ -53,6 +53,34 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const { userName: sessionUserName } = usePhotoSession()
   const activeUserName = currentUser || urlUser || sessionUserName
 
+  // Block access if no user name is available
+  if (!activeUserName) {
+    return (
+      <div className="min-h-screen bg-surface-primary flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-surface-card rounded-2xl p-8 border border-border-primary shadow-premium text-center">
+          <div className="mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <span className="text-2xl">🚫</span>
+            </div>
+            <h2 className="text-xl font-semibold text-text-primary mb-2">Access Restricted</h2>
+            <p className="text-text-secondary">
+              You need to set your name first to access the gallery.
+            </p>
+          </div>
+          <a
+            href="/"
+            className="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700
+                       text-white px-6 py-3 rounded-xl font-medium tracking-wide transition-all duration-300
+                       hover:shadow-lg hover:-translate-y-0.5 inline-flex items-center gap-2"
+          >
+            <span className="text-lg">👤</span>
+            Set Your Name
+          </a>
+        </div>
+      </div>
+    )
+  }
+
   useEffect(() => {
     fetchPhotos()
   }, [showAllUsers, activeUserName])
