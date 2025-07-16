@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.VITE_SUPABASE_ANON_KEY
+  process.env.VITE_SUPABASE_URL || 'https://quetdrybtkhknbrkmrmn.supabase.co',
+  process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1ZXRkcnlidGtoa25icmttcm1uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2MDg5ODIsImV4cCI6MjA2ODE4NDk4Mn0.y-P2P75LMDQjdLOESJM7Og-OZWWxaey4BRsH7Mnczq8'
 );
 
 export default async function handler(req, res) {
@@ -73,14 +73,18 @@ export default async function handler(req, res) {
     if (eventCode && eventId) {
       try {
         console.log('💾 Saving photo metadata to Supabase...');
+        console.log('🔍 Event context:', { eventCode, eventId, userName });
 
         // First, find the participant ID for this user in this event
+        console.log('🔍 Looking for participant:', { eventId, userName });
         const { data: participantData, error: participantError } = await supabase
           .from('event_participants')
           .select('id')
           .eq('event_id', eventId)
           .eq('user_name', userName)
           .single();
+
+        console.log('🔍 Participant query result:', { participantData, participantError });
 
         if (participantError || !participantData) {
           console.error('❌ Participant not found:', participantError);

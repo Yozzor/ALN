@@ -109,11 +109,11 @@ const MobileApp = () => {
                 const userCount = checkForMultipleUsers(savedSession.eventCode)
                 console.log(`👥 Found ${userCount} users for event ${savedSession.eventCode}`)
 
-                if (userCount > 1) {
-                  // Multiple users detected - show user selection
-                  setAppState('userSelect')
-                  return
-                }
+                // If there's an active session, continue with it automatically
+                // Only show user selection if user manually wants to switch
+                console.log(`📱 Active session found for ${savedSession.userName}, continuing automatically`)
+
+                // Skip user selection - we have an active session, use it
 
                 // Single user - proceed normally
                 const success = startSession(savedSession.userName)
