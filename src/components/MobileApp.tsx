@@ -1,16 +1,34 @@
 import { useState, useEffect } from 'react'
-import WelcomeScreen from './WelcomeScreen'
+import LobbyLanding from './LobbyLanding'
+import EventCreation, { type EventCreationData } from './EventCreation'
+import EventCreated from './EventCreated'
 import CameraInterface from './CameraInterface'
 import GameOverScreen from './GameOverScreen'
 import { usePhotoSession } from '../hooks/usePhotoSession'
 import { useVercelBlob } from '../hooks/useVercelBlob'
 import { testSupabaseConnection } from '../utils/supabaseTest'
+import {
+  createEvent,
+  findEventByCode,
+  joinEvent,
+  isEventFull,
+  saveEventSession,
+  getEventSession,
+  clearEventSession,
+  type EventSession
+} from '../lib/eventUtils'
+import { type Event } from '../lib/supabase'
 
-type AppState = 'welcome' | 'camera' | 'gameOver'
+type AppState = 'lobby' | 'createEvent' | 'eventCreated' | 'camera' | 'gameOver'
 
 const MobileApp = () => {
-  const [appState, setAppState] = useState<AppState>('welcome')
+  const [appState, setAppState] = useState<AppState>('lobby')
   const [supabaseReady, setSupabaseReady] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [currentEvent, setCurrentEvent] = useState<Event | null>(null)
+  const [eventSession, setEventSession] = useState<EventSession | null>(null)
+
   const {
     userName,
     photosRemaining,
@@ -27,9 +45,9 @@ const MobileApp = () => {
     uploadPhoto
   } = useVercelBlob()
 
-  // Test Supabase connection on app load
+  // Test Supabase connection and check for existing session on app load
   useEffect(() => {
-    const initSupabase = async () => {
+    const initApp = async () => {
       console.log('🚀 Initializing About Last Night app...')
       try {
         const isReady = await testSupabaseConnection()
@@ -37,6 +55,46 @@ const MobileApp = () => {
 
         if (isReady) {
           console.log('✅ App ready with Supabase integration!')
+
+          // Check for existing event session
+          const savedSession = getEventSession()
+          if (savedSession) {
+            console.log('📱 Found existing event session:', savedSession)
+            setEventSession(savedSession)
+
+            // Try to find the event to make sure it still exists
+            try {
+              const event = await findEventByCode(savedSession.eventCode)
+              if (event) {
+                setCurrentEvent(event)
+                // Start the photo session with saved user name
+                const success = startSession(savedSession.userName)
+                if (success) {
+                  await authenticate()
+                  if (photosRemaining > 0) {
+                    setAppState('camera')
+                  } else {
+                    setAppState('gameOver')
+                  }
+                } else {
+                  // Session failed, clear and start fresh
+                  clearEventSession()
+                  setEventSession(null)
+                  setAppState('lobby')
+                }
+              } else {
+                // Event no longer exists, clear session
+                clearEventSession()
+                setEventSession(null)
+                setAppState('lobby')
+              }
+            } catch (error) {
+              console.error('Error validating saved session:', error)
+              clearEventSession()
+              setEventSession(null)
+              setAppState('lobby')
+            }
+          }
         } else {
           // IMPORTANT: Force app to continue even if Supabase test fails
           console.warn('⚠️ Supabase test failed but continuing anyway')
@@ -49,26 +107,122 @@ const MobileApp = () => {
       }
     }
 
-    initSupabase()
+    initApp()
   }, [])
 
-  // Check for existing session on app load
-  useEffect(() => {
-    if (isSessionActive) {
-      if (photosRemaining > 0) {
+  // Handle joining an existing event
+  const handleJoinEvent = async (eventCode: string, userName: string) => {
+    setIsLoading(true)
+    setError('')
+
+    try {
+      console.log(`🔑 Attempting to join event: ${eventCode}`)
+
+      // Find the event
+      const event = await findEventByCode(eventCode)
+      if (!event) {
+        setError('Event not found. Please check the code and try again.')
+        return
+      }
+
+      // Check if event is full
+      const isFull = await isEventFull(event.id)
+      if (isFull) {
+        setError('This event is full. No more participants can join.')
+        return
+      }
+
+      // Join the event
+      const participantId = await joinEvent(event.id, userName)
+
+      // Create session
+      const session: EventSession = {
+        eventId: event.id,
+        eventCode: event.event_code,
+        participantId,
+        userName,
+        eventTitle: event.title
+      }
+
+      // Save session and start photo session
+      saveEventSession(session)
+      setEventSession(session)
+      setCurrentEvent(event)
+
+      const success = startSession(userName)
+      if (success) {
+        await authenticate()
         setAppState('camera')
       } else {
-        setAppState('gameOver')
+        setError('Failed to start photo session')
       }
-    }
-  }, [isSessionActive, photosRemaining])
 
-  const handleStartSession = async (name: string) => {
-    const success = startSession(name)
-    if (success) {
-      // Initialize Vercel Blob (no auth needed)
-      await authenticate()
-      setAppState('camera')
+      console.log('✅ Successfully joined event!')
+    } catch (error) {
+      console.error('❌ Error joining event:', error)
+      setError('Failed to join event. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Handle creating a new event
+  const handleCreateEvent = async (eventData: EventCreationData) => {
+    setIsLoading(true)
+    setError('')
+
+    try {
+      console.log('🎉 Creating new event:', eventData)
+
+      const event = await createEvent(eventData)
+      setCurrentEvent(event)
+      setAppState('eventCreated')
+
+      console.log('✅ Event created successfully!')
+    } catch (error) {
+      console.error('❌ Error creating event:', error)
+      setError('Failed to create event. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Handle entering the created event
+  const handleEnterCreatedEvent = async (userName: string) => {
+    if (!currentEvent) return
+
+    setIsLoading(true)
+    setError('')
+
+    try {
+      // Join the event as organizer
+      const participantId = await joinEvent(currentEvent.id, userName)
+
+      // Create session
+      const session: EventSession = {
+        eventId: currentEvent.id,
+        eventCode: currentEvent.event_code,
+        participantId,
+        userName,
+        eventTitle: currentEvent.title
+      }
+
+      // Save session and start photo session
+      saveEventSession(session)
+      setEventSession(session)
+
+      const success = startSession(userName)
+      if (success) {
+        await authenticate()
+        setAppState('camera')
+      } else {
+        setError('Failed to start photo session')
+      }
+    } catch (error) {
+      console.error('❌ Error entering event:', error)
+      setError('Failed to enter event. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -95,7 +249,16 @@ const MobileApp = () => {
   }
 
   const handleRestart = () => {
-    setAppState('welcome')
+    clearEventSession()
+    setEventSession(null)
+    setCurrentEvent(null)
+    setAppState('lobby')
+  }
+
+  const handleBackToLobby = () => {
+    setAppState('lobby')
+    setCurrentEvent(null)
+    setError('')
   }
 
   return (
@@ -112,10 +275,27 @@ const MobileApp = () => {
 
       {/* Content */}
       <div className="relative z-10">
-        {appState === 'welcome' && (
-          <WelcomeScreen
-            onStartSession={handleStartSession}
-            isLoading={!supabaseReady}
+        {appState === 'lobby' && (
+          <LobbyLanding
+            onJoinEvent={handleJoinEvent}
+            onCreateEvent={() => setAppState('createEvent')}
+            isLoading={isLoading || !supabaseReady}
+          />
+        )}
+
+        {appState === 'createEvent' && (
+          <EventCreation
+            onCreateEvent={handleCreateEvent}
+            onBack={handleBackToLobby}
+            isLoading={isLoading}
+          />
+        )}
+
+        {appState === 'eventCreated' && currentEvent && (
+          <EventCreated
+            event={currentEvent}
+            onEnterEvent={handleEnterCreatedEvent}
+            isLoading={isLoading}
           />
         )}
 
@@ -137,23 +317,46 @@ const MobileApp = () => {
             onRestart={handleRestart}
           />
         )}
+
+        {/* Error Display */}
+        {error && (
+          <div className="fixed top-20 left-4 right-4 bg-red-500 text-white p-4 rounded-xl z-50 animate-fade-in">
+            <p className="text-sm font-medium">{error}</p>
+            <button
+              onClick={() => setError('')}
+              className="absolute top-2 right-2 text-white hover:text-gray-200"
+            >
+              ✕
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Premium Gallery Link - Fixed position - Only show if user has a name */}
-      {userName && (
+      {/* Premium Gallery Link - Fixed position - Only show if user is in an event */}
+      {eventSession && (
         <div className="fixed top-6 right-6 z-50">
           <a
-            href={`/gallery?user=${encodeURIComponent(userName)}`}
+            href={`/gallery?event=${eventSession.eventCode}&user=${encodeURIComponent(eventSession.userName)}`}
             className="group bg-surface-card hover:bg-surface-hover border border-border-primary
                        text-text-primary px-4 py-2.5 rounded-lg shadow-premium hover:shadow-premium-lg transition-all duration-300
                        hover:-translate-y-0.5 active:translate-y-0 backdrop-blur-sm flex items-center gap-2"
-            title="View Gallery"
+            title="View Event Gallery"
           >
             <div className="w-3.5 h-3.5 bg-text-primary opacity-60 rounded-sm flex-shrink-0"></div>
             <span className="text-sm font-medium tracking-wide">
               Gallery
             </span>
           </a>
+        </div>
+      )}
+
+      {/* Event Info - Show current event details */}
+      {eventSession && appState === 'camera' && (
+        <div className="fixed top-6 left-6 z-50">
+          <div className="bg-surface-card border border-border-primary text-text-primary px-4 py-2.5 rounded-lg shadow-premium backdrop-blur-sm">
+            <div className="text-xs text-text-tertiary mb-1">Event</div>
+            <div className="text-sm font-medium tracking-wide">{eventSession.eventCode}</div>
+          </div>
         </div>
       )}
 
