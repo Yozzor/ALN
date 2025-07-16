@@ -46,7 +46,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const [error, setError] = useState<string | null>(null)
   const [showAllUsers, setShowAllUsers] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
-  const [viewMode, setViewMode] = useState<'gallery' | 'voting'>('gallery')
+  const [viewMode, setViewMode] = useState<'gallery' | 'voting' | 'awards'>('gallery')
   const [currentVotingPhoto, setCurrentVotingPhoto] = useState<Photo | null>(null)
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([])
   const [votedPhotoUrls, setVotedPhotoUrls] = useState<Set<string>>(new Set())
@@ -64,6 +64,10 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const [timeRemaining, setTimeRemaining] = useState<number>(0) // seconds remaining
   const [countdownActive, setCountdownActive] = useState(false)
   const [showEventStartNotification, setShowEventStartNotification] = useState(false)
+
+  // Awards state
+  const [awardWinners, setAwardWinners] = useState<any[]>([])
+  const [loadingAwards, setLoadingAwards] = useState(false)
 
   // Get user and event from URL params or session data
   const [searchParams] = useSearchParams()
@@ -514,8 +518,97 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       setEventState('ended')
       setCountdownActive(false)
 
+      // Calculate and show awards
+      await calculateAwardWinners()
+      setViewMode('awards')
+
     } catch (error) {
       console.error('❌ Error ending event:', error)
+    }
+  }
+
+  // Calculate award winners from vote data
+  const calculateAwardWinners = async () => {
+    try {
+      setLoadingAwards(true)
+      console.log('🏆 Calculating award winners...')
+
+      if (!currentEventCode) return
+
+      // Get event ID
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('id')
+        .eq('event_code', currentEventCode)
+        .single()
+
+      if (eventError || !eventData) {
+        console.error('❌ Event not found for awards:', eventError)
+        return
+      }
+
+      // Get vote counts by category and photo
+      const { data: voteData, error: voteError } = await supabase
+        .from('photo_votes')
+        .select(`
+          category,
+          photo_id,
+          event_photos!inner(
+            photo_url,
+            file_name,
+            uploaded_at,
+            event_participants!inner(user_name)
+          )
+        `)
+        .eq('event_id', eventData.id)
+
+      if (voteError) {
+        console.error('❌ Error fetching vote data:', voteError)
+        return
+      }
+
+      // Group votes by category and count them
+      const categoryWinners: any[] = []
+
+      AWARD_CATEGORIES.forEach(category => {
+        const categoryVotes = voteData?.filter(vote => vote.category === category.id) || []
+
+        // Count votes per photo
+        const voteCounts: { [photoId: string]: { count: number, photo: any } } = {}
+
+        categoryVotes.forEach(vote => {
+          if (!voteCounts[vote.photo_id]) {
+            voteCounts[vote.photo_id] = {
+              count: 0,
+              photo: vote.event_photos
+            }
+          }
+          voteCounts[vote.photo_id].count++
+        })
+
+        // Find winner(s) - photos with highest vote count
+        const maxVotes = Math.max(...Object.values(voteCounts).map(v => v.count), 0)
+        const winners = Object.values(voteCounts).filter(v => v.count === maxVotes && v.count > 0)
+
+        if (winners.length > 0) {
+          categoryWinners.push({
+            category,
+            winners: winners.map(w => ({
+              ...w.photo,
+              voteCount: w.count
+            })),
+            maxVotes
+          })
+        }
+      })
+
+      setAwardWinners(categoryWinners)
+      console.log(`🏆 Calculated ${categoryWinners.length} category winners`)
+
+    } catch (error) {
+      console.error('❌ Error calculating award winners:', error)
+    } finally {
+      setLoadingAwards(false)
     }
   }
 
@@ -871,6 +964,18 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                     <p className="text-purple-400 font-semibold text-lg">Event Completed!</p>
                     <p className="text-text-secondary">Check out the awards ceremony!</p>
                   </div>
+                  <button
+                    onClick={() => {
+                      calculateAwardWinners()
+                      setViewMode('awards')
+                    }}
+                    className="ml-4 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700
+                               text-white px-4 py-2 rounded-lg font-medium transition-all duration-300
+                               hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
+                  >
+                    <span className="text-lg">🏆</span>
+                    View Awards
+                  </button>
                 </div>
               </div>
             )}
@@ -1401,6 +1506,127 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Awards Ceremony */}
+      {viewMode === 'awards' && (
+        <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-black to-blue-900 z-[90] overflow-y-auto">
+          {/* Awards Header */}
+          <div className="text-center py-12 px-4">
+            <div className="animate-fade-in">
+              <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 mb-4">
+                🏆 AWARDS CEREMONY 🏆
+              </h1>
+              <p className="text-xl text-white/80 mb-2">Event: {currentEventCode}</p>
+              <p className="text-lg text-white/60">Celebrating the best moments captured!</p>
+            </div>
+          </div>
+
+          {/* Loading State */}
+          {loadingAwards && (
+            <div className="text-center py-20">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent mx-auto mb-4"></div>
+              <p className="text-white text-xl">Calculating winners...</p>
+            </div>
+          )}
+
+          {/* Award Categories */}
+          {!loadingAwards && awardWinners.length > 0 && (
+            <div className="max-w-6xl mx-auto px-4 pb-20">
+              {awardWinners.map((award, index) => (
+                <div
+                  key={award.category.id}
+                  className="mb-16 animate-slide-up"
+                  style={{ animationDelay: `${index * 200}ms` }}
+                >
+                  {/* Category Header */}
+                  <div className="text-center mb-8">
+                    <div className="text-6xl mb-4">{award.category.emoji}</div>
+                    <h2 className="text-3xl font-bold text-white mb-2">{award.category.label}</h2>
+                    <p className="text-white/60">{award.maxVotes} vote{award.maxVotes !== 1 ? 's' : ''}</p>
+                  </div>
+
+                  {/* Winners */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {award.winners.map((winner: any, winnerIndex: number) => (
+                      <div
+                        key={winner.photo_url}
+                        className={`relative group ${
+                          award.winners.length > 1 && winnerIndex > 0
+                            ? 'opacity-75 scale-95'
+                            : ''
+                        }`}
+                      >
+                        {/* Winner Badge */}
+                        {award.winners.length > 1 && winnerIndex > 0 && (
+                          <div className="absolute -top-4 -right-4 z-10 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+                            😅 Runner-up!
+                          </div>
+                        )}
+
+                        {award.winners.length === 1 || winnerIndex === 0 ? (
+                          <div className="absolute -top-4 -right-4 z-10 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+                            👑 WINNER!
+                          </div>
+                        ) : null}
+
+                        {/* Photo Card */}
+                        <div className="bg-white/10 backdrop-blur-md rounded-2xl overflow-hidden border border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105">
+                          <img
+                            src={winner.photo_url}
+                            alt={`Winner by ${winner.user_name}`}
+                            className="w-full h-64 object-cover"
+                          />
+                          <div className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-white font-semibold">{winner.user_name}</p>
+                                <p className="text-white/60 text-sm">
+                                  {new Date(winner.uploaded_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-yellow-400 font-bold text-lg">{winner.voteCount}</p>
+                                <p className="text-white/60 text-sm">votes</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {/* Back to Gallery Button */}
+              <div className="text-center mt-16">
+                <button
+                  onClick={() => setViewMode('gallery')}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700
+                             text-white font-bold py-4 px-8 rounded-xl transition-all duration-300
+                             shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                >
+                  📸 View Full Gallery
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* No Winners State */}
+          {!loadingAwards && awardWinners.length === 0 && (
+            <div className="text-center py-20">
+              <div className="text-6xl mb-4">🤷‍♂️</div>
+              <h2 className="text-2xl text-white mb-4">No votes yet!</h2>
+              <p className="text-white/60 mb-8">Looks like nobody voted during this event.</p>
+              <button
+                onClick={() => setViewMode('gallery')}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl"
+              >
+                Back to Gallery
+              </button>
+            </div>
+          )}
         </div>
       )}
 
