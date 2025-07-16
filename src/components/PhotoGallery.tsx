@@ -746,16 +746,25 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     console.log('📡 Processing event update:', updatedEvent)
 
     setEventData(updatedEvent)
-    setEventState(updatedEvent.event_state || 'not_started')
+    const newEventState = updatedEvent.event_state || 'not_started'
+    setEventState(newEventState)
 
     // If event just started, show notification to all users
-    if (updatedEvent.event_state === 'countdown' && eventState !== 'countdown') {
+    if (newEventState === 'countdown' && eventState !== 'countdown') {
       setShowEventStartNotification(true)
       setTimeout(() => setShowEventStartNotification(false), 5000) // Hide after 5 seconds
     }
 
+    // If event just ended, force ALL users to awards ceremony
+    if (newEventState === 'ended' && eventState !== 'ended') {
+      console.log('🏁 Event ended! Forcing all users to awards ceremony...')
+      calculateAwardWinners()
+      setViewMode('awards')
+      setCountdownActive(false)
+    }
+
     // Calculate time remaining if countdown is active
-    if (updatedEvent.event_state === 'countdown' && updatedEvent.countdown_start_time) {
+    if (newEventState === 'countdown' && updatedEvent.countdown_start_time) {
       calculateTimeRemaining(updatedEvent)
     }
   }
@@ -1039,7 +1048,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               )}
 
               {/* Admin Test Button - Force End Event */}
-              {isEventCreator && (eventState === 'countdown' || eventState === 'not_started') && (
+              {isEventCreator && eventState !== 'ended' && (
                 <button
                   onClick={() => {
                     if (eventData?.id) {
