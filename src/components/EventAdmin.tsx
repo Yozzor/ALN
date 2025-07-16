@@ -84,10 +84,31 @@ const EventAdmin = ({ event, currentUserName, onBack, onEventEnded }: EventAdmin
 
     try {
       setActionLoading('end-event')
-      
-      await updateEventStatus(event.id, 'completed')
+
+      console.log('🏁 Admin ending event...')
+
+      const now = new Date().toISOString()
+
+      // Update BOTH status and event_state fields for compatibility
+      const { error } = await supabase
+        .from('events')
+        .update({
+          status: 'completed',
+          event_state: 'ended',
+          ended_at: now,
+          event_ended_at: now
+        })
+        .eq('id', event.id)
+
+      if (error) {
+        console.error('❌ Failed to end event:', error)
+        setError('Failed to end event')
+        return
+      }
+
+      console.log('✅ Event ended successfully!')
       onEventEnded()
-      
+
     } catch (error) {
       console.error('Error ending event:', error)
       setError('Failed to end event')
@@ -100,13 +121,38 @@ const EventAdmin = ({ event, currentUserName, onBack, onEventEnded }: EventAdmin
     try {
       setActionLoading('start-event')
 
-      await updateEventStatus(event.id, 'active')
+      console.log('🚀 Admin starting event...')
+      console.log('🚀 Event ID:', event.id)
+      console.log('🚀 Event Code:', event.event_code)
 
-      // Update local event state instead of reloading
-      event.status = 'active'
-      event.started_at = new Date().toISOString()
+      const now = new Date()
+      const countdownStartTime = now.toISOString()
 
+      // Update BOTH status and event_state fields for compatibility
+      const { data: updateResult, error } = await supabase
+        .from('events')
+        .update({
+          status: 'active',
+          event_state: 'countdown',
+          started_at: countdownStartTime,
+          countdown_start_time: countdownStartTime,
+          event_started_at: countdownStartTime
+        })
+        .eq('id', event.id)
+        .select()
+
+      if (error) {
+        console.error('❌ Failed to start event:', error)
+        setError('Failed to start event')
+        return
+      }
+
+      console.log('✅ Event update result:', updateResult)
       console.log('✅ Event started successfully!')
+
+      // Update local event state
+      event.status = 'active'
+      event.started_at = countdownStartTime
 
     } catch (error) {
       console.error('Error starting event:', error)
