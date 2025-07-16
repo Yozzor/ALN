@@ -99,12 +99,15 @@ const EventAdmin = ({ event, currentUserName, onBack, onEventEnded }: EventAdmin
   const startEvent = async () => {
     try {
       setActionLoading('start-event')
-      
+
       await updateEventStatus(event.id, 'active')
-      
-      // Refresh to get updated event status
-      window.location.reload()
-      
+
+      // Update local event state instead of reloading
+      event.status = 'active'
+      event.started_at = new Date().toISOString()
+
+      console.log('✅ Event started successfully!')
+
     } catch (error) {
       console.error('Error starting event:', error)
       setError('Failed to start event')

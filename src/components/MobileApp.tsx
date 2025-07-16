@@ -95,13 +95,12 @@ const MobileApp = () => {
                 const success = startSession(savedSession.userName)
                 if (success) {
                   await authenticate()
-                  if (photosRemaining > 0) {
-                    setAppState('camera')
-                  } else {
-                    setAppState('gameOver')
-                  }
+                  console.log('📸 Photo session started, photos remaining:', photosRemaining)
+                  // Always go to camera first - let the photo session logic handle gameOver
+                  setAppState('camera')
                 } else {
                   // Session failed, clear and start fresh
+                  console.log('❌ Photo session failed to start')
                   clearEventSession()
                   setEventSession(null)
                   setAppState('lobby')
@@ -133,6 +132,14 @@ const MobileApp = () => {
 
     initApp()
   }, [])
+
+  // Monitor photo session completion
+  useEffect(() => {
+    if (appState === 'camera' && photosRemaining === 0 && eventSession) {
+      console.log('📸 All photos taken, going to game over')
+      setAppState('gameOver')
+    }
+  }, [photosRemaining, appState, eventSession])
 
   // Handle joining an existing event
   const handleJoinEvent = async (eventCode: string, userName: string) => {
@@ -253,22 +260,20 @@ const MobileApp = () => {
   const handlePhotoCapture = async (photoBlob: Blob) => {
     // Take photo (decrements counter)
     const photoData = takePhoto(photoBlob)
-    
-    if (photoData) {
+
+    if (photoData && eventSession) {
       // Upload to Vercel Blob
       try {
-        await uploadPhoto(photoData, userName!)
+        await uploadPhoto(photoData, eventSession.userName)
         console.log('✅ Photo uploaded successfully!')
       } catch (error) {
         console.error('❌ Failed to upload photo:', error)
         // Photo is still counted even if upload fails
         // The error will be shown in the camera interface
       }
-      
-      // Check if this was the last photo
-      if (photosRemaining <= 1) {
-        setAppState('gameOver')
-      }
+
+      // Don't manually trigger gameOver here - let the useEffect handle it
+      console.log('📸 Photo captured, remaining:', photosRemaining - 1)
     }
   }
 
@@ -401,10 +406,10 @@ const MobileApp = () => {
           />
         )}
 
-        {appState === 'gameOver' && (
+        {appState === 'gameOver' && eventSession && (
           <GameOverScreen
-            userName={userName!}
-            totalPhotos={10}
+            userName={eventSession.userName}
+            totalPhotos={10 - photosRemaining}
             onRestart={handleRestart}
           />
         )}
