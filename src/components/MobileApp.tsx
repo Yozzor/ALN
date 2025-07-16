@@ -512,9 +512,9 @@ const MobileApp = () => {
         )}
       </div>
 
-      {/* Premium Gallery Link & Admin Button - Fixed position - Only show if user is in an event */}
+      {/* Premium Gallery Link & Admin Button - MOVED TO BOTTOM RIGHT TO AVOID OVERLAP */}
       {eventSession && (
-        <div className="fixed top-6 right-6 z-50 flex flex-col gap-3">
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
           <a
             href={`/gallery?event=${eventSession.eventCode}&user=${encodeURIComponent(eventSession.userName)}`}
             className="group bg-surface-card hover:bg-surface-hover border border-border-primary
