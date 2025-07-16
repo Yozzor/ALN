@@ -96,16 +96,70 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     }
   }
 
-  // Load user-specific voted photos
+  // Load user-specific voted photos from database
   useEffect(() => {
     if (currentEventCode && activeUserName) {
-      const votingKey = getUserVotingKey(currentEventCode, activeUserName)
-      const saved = localStorage.getItem(votingKey)
-      const votedUrls = saved ? new Set<string>(JSON.parse(saved)) : new Set<string>()
-      setVotedPhotoUrls(votedUrls)
-      console.log(`📊 Loaded ${votedUrls.size} voted photos for ${activeUserName} in event ${currentEventCode}`)
+      loadUserVotes()
     }
   }, [currentEventCode, activeUserName])
+
+  // Load user votes from Supabase
+  const loadUserVotes = async () => {
+    try {
+      if (!currentEventCode || !activeUserName) return
+
+      // Get event and participant IDs
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('id')
+        .eq('event_code', currentEventCode)
+        .single()
+
+      if (eventError || !eventData) return
+
+      const { data: participantData, error: participantError } = await supabase
+        .from('event_participants')
+        .select('id')
+        .eq('event_id', eventData.id)
+        .eq('user_name', activeUserName)
+        .single()
+
+      if (participantError || !participantData) return
+
+      // Get all votes by this user in this event
+      const { data: votes, error: votesError } = await supabase
+        .from('photo_votes')
+        .select(`
+          photo_id,
+          event_photos!inner(photo_url)
+        `)
+        .eq('event_id', eventData.id)
+        .eq('participant_id', participantData.id)
+
+      if (votesError) {
+        console.error('❌ Error loading user votes:', votesError)
+        return
+      }
+
+      // Extract photo URLs that user has voted on
+      const votedUrls = new Set<string>()
+      votes?.forEach(vote => {
+        if (vote.event_photos?.photo_url) {
+          votedUrls.add(vote.event_photos.photo_url)
+        }
+      })
+
+      setVotedPhotoUrls(votedUrls)
+      console.log(`📊 Loaded ${votedUrls.size} voted photos for ${activeUserName} in event ${currentEventCode}`)
+
+      // Also save to localStorage for backup
+      const votingKey = getUserVotingKey(currentEventCode, activeUserName)
+      localStorage.setItem(votingKey, JSON.stringify([...votedUrls]))
+
+    } catch (error) {
+      console.error('❌ Error loading user votes:', error)
+    }
+  }
 
   // Block access if no user name or event is available
   if (!activeUserName || !currentEventCode) {
@@ -249,40 +303,44 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       setIsVoting(true)
       console.log(`🗳️ Voting for photo: ${photoUrl} in category: ${category}`)
 
-      // Mark this photo as voted and save to user-specific localStorage
-      let updatedVotedUrls: Set<string> = new Set()
-      if (currentEventCode && activeUserName) {
-        setVotedPhotoUrls(prev => {
-          updatedVotedUrls = new Set([...prev, photoUrl])
-          const votingKey = getUserVotingKey(currentEventCode, activeUserName)
-          localStorage.setItem(votingKey, JSON.stringify([...updatedVotedUrls]))
-          console.log(`📊 Saved vote for ${activeUserName} in event ${currentEventCode}`)
-          return updatedVotedUrls
-        })
-      }
+      // Save vote to Supabase database
+      const voteSuccess = await saveVoteToDatabase(photoUrl, category)
 
-      // Find the category to get the emoji
-      const selectedCategory = AWARD_CATEGORIES.find(cat => cat.id === category)
-      if (selectedCategory) {
-        // Trigger floating emoji animation
-        createFloatingEmojis(selectedCategory.emoji)
-      }
-
-      // TODO: Save vote to Supabase when event system is implemented
-      // For now, just log the vote
-
-      // Show next random photo after animation starts
-      setTimeout(() => {
-        // Pass the updated voted URLs to ensure we don't show the same photo again
-        const nextPhoto = getRandomVotingPhoto(updatedVotedUrls)
-        setCurrentVotingPhoto(nextPhoto)
-        setIsVoting(false) // Re-enable voting
-
-        // Start observation timer for next photo
-        if (nextPhoto) {
-          startObservationTimer()
+      if (voteSuccess) {
+        // Mark this photo as voted locally for UI updates
+        let updatedVotedUrls: Set<string> = new Set()
+        if (currentEventCode && activeUserName) {
+          setVotedPhotoUrls(prev => {
+            updatedVotedUrls = new Set([...prev, photoUrl])
+            const votingKey = getUserVotingKey(currentEventCode, activeUserName)
+            localStorage.setItem(votingKey, JSON.stringify([...updatedVotedUrls]))
+            console.log(`📊 Saved vote for ${activeUserName} in event ${currentEventCode}`)
+            return updatedVotedUrls
+          })
         }
-      }, 1500) // Increased delay to see animation better
+
+        // Find the category to get the emoji
+        const selectedCategory = AWARD_CATEGORIES.find(cat => cat.id === category)
+        if (selectedCategory) {
+          // Trigger floating emoji animation
+          createFloatingEmojis(selectedCategory.emoji)
+        }
+
+        // Show next random photo after animation starts
+        setTimeout(() => {
+          // Pass the updated voted URLs to ensure we don't show the same photo again
+          const nextPhoto = getRandomVotingPhoto(updatedVotedUrls)
+          setCurrentVotingPhoto(nextPhoto)
+          setIsVoting(false) // Re-enable voting
+
+          // Start observation timer for next photo
+          if (nextPhoto) {
+            startObservationTimer()
+          }
+        }, 1500) // Increased delay to see animation better
+      } else {
+        setIsVoting(false) // Re-enable voting on error
+      }
 
     } catch (error) {
       console.error('Failed to vote:', error)
@@ -360,6 +418,81 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   }
 
   // End the event when countdown finishes
+  // Save vote to Supabase database
+  const saveVoteToDatabase = async (photoUrl: string, category: string): Promise<boolean> => {
+    try {
+      if (!currentEventCode || !activeUserName) {
+        console.error('❌ Missing event code or user name for voting')
+        return false
+      }
+
+      // Get event and participant IDs
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('id')
+        .eq('event_code', currentEventCode)
+        .single()
+
+      if (eventError || !eventData) {
+        console.error('❌ Event not found for voting:', eventError)
+        return false
+      }
+
+      const { data: participantData, error: participantError } = await supabase
+        .from('event_participants')
+        .select('id')
+        .eq('event_id', eventData.id)
+        .eq('user_name', activeUserName)
+        .single()
+
+      if (participantError || !participantData) {
+        console.error('❌ Participant not found for voting:', participantError)
+        return false
+      }
+
+      // Get photo ID from URL
+      const { data: photoData, error: photoError } = await supabase
+        .from('event_photos')
+        .select('id')
+        .eq('photo_url', photoUrl)
+        .eq('event_id', eventData.id)
+        .single()
+
+      if (photoError || !photoData) {
+        console.error('❌ Photo not found for voting:', photoError)
+        return false
+      }
+
+      // Save the vote
+      const { error: voteError } = await supabase
+        .from('photo_votes')
+        .insert({
+          event_id: eventData.id,
+          photo_id: photoData.id,
+          participant_id: participantData.id,
+          category: category
+        })
+
+      if (voteError) {
+        // Check if it's a duplicate vote error
+        if (voteError.code === '23505') { // Unique constraint violation
+          console.log('⚠️ User already voted on this photo in this category')
+          alert('You have already voted on this photo in this category!')
+          return false
+        }
+        console.error('❌ Failed to save vote:', voteError)
+        return false
+      }
+
+      console.log(`✅ Vote saved to database: ${category} for photo ${photoData.id}`)
+      return true
+
+    } catch (error) {
+      console.error('❌ Error saving vote to database:', error)
+      return false
+    }
+  }
+
   const endEvent = async (eventId: string) => {
     try {
       console.log('🏁 Ending event...')
