@@ -546,9 +546,9 @@ const MobileApp = () => {
         </div>
       )}
 
-      {/* Event Info - Show current event details */}
+      {/* Event Info - MOVED TO BOTTOM LEFT TO AVOID COVERING GALLERY CONTENT */}
       {eventSession && appState === 'camera' && (
-        <div className="fixed top-6 left-6 z-50">
+        <div className="fixed bottom-6 left-6 z-50">
           <div className="bg-surface-card border border-border-primary text-text-primary px-4 py-2.5 rounded-lg shadow-premium backdrop-blur-sm">
             <div className="text-xs text-text-tertiary mb-1">Event</div>
             <div className="text-sm font-medium tracking-wide">{eventSession.eventCode}</div>
