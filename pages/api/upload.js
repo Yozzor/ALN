@@ -50,6 +50,18 @@ export default async function handler(req, res) {
       });
     }
 
+    // Check request body size (rough estimate)
+    const requestBodySize = JSON.stringify(req.body).length;
+    console.log('📊 Request body size:', Math.round(requestBodySize / 1024), 'KB');
+
+    if (requestBodySize > 4 * 1024 * 1024) { // 4MB limit
+      console.error('❌ Request body too large:', requestBodySize, 'bytes');
+      return res.status(413).json({
+        success: false,
+        error: `Request too large: ${Math.round(requestBodySize / 1024 / 1024 * 100) / 100}MB. Try reducing photo quality.`
+      });
+    }
+
     console.log('📸 Starting Vercel Blob upload for user:', userName);
 
     // Convert base64 to buffer

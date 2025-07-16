@@ -189,8 +189,8 @@ export const useCamera = () => {
       return null
     }
 
-    // High-quality canvas size (max 2048px width for excellent quality)
-    const maxWidth = 2048
+    // Optimized canvas size for mobile uploads (max 1200px width for good quality but smaller files)
+    const maxWidth = 1200
     const aspectRatio = video.videoHeight / video.videoWidth
 
     if (video.videoWidth > maxWidth) {
@@ -201,17 +201,17 @@ export const useCamera = () => {
       canvas.height = video.videoHeight
     }
 
-    // Draw the current video frame to canvas with high quality
+    // Draw the current video frame to canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height)
 
-    // Get the image data with high quality (0.92 for excellent quality)
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.92)
+    // Get the image data with optimized quality (0.75 for good quality but smaller files)
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.75)
 
-    // Convert to blob for upload with high quality
+    // Convert to blob for upload with optimized quality
     const blob = await new Promise<Blob>((resolve) => {
       canvas.toBlob((blob) => {
         resolve(blob!)
-      }, 'image/jpeg', 0.92)
+      }, 'image/jpeg', 0.75)
     })
 
     console.log('📸 Photo captured successfully')

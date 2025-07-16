@@ -87,12 +87,12 @@ const PolaroidPhoto = ({ imageData, userName, onPolaroidReady, className = '' }:
         ctx.fillStyle = '#999999'
         ctx.fillText('About Last Night', polaroidWidth / 2, textStartY + (dateSize * 1.8) + (brandSize * 1.8))
 
-        // Convert to blob and call callback with high quality
+        // Convert to blob with optimized quality for mobile uploads
         canvas.toBlob((blob) => {
           if (blob) {
             onPolaroidReady(blob)
           }
-        }, 'image/jpeg', 0.95)
+        }, 'image/jpeg', 0.75)
       }
 
       img.src = imageData
