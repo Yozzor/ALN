@@ -1,5 +1,4 @@
 {
-  "_comment": "Fixed runtime specification error - clean config for API routes",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
