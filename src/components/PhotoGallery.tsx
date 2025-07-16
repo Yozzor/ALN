@@ -137,15 +137,18 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   }, [currentVotingPhoto])
 
   // Get random photo for voting (excluding already voted photos)
-  const getRandomVotingPhoto = () => {
+  const getRandomVotingPhoto = (excludeUrls?: Set<string>) => {
     if (photos.length === 0) {
       console.log('📷 No photos available for voting')
       return null
     }
 
+    // Use provided excludeUrls or fall back to current votedPhotoUrls
+    const urlsToExclude = excludeUrls || votedPhotoUrls
+
     // Filter out photos that have already been voted on
-    const unvotedPhotos = photos.filter(photo => !votedPhotoUrls.has(photo.url))
-    console.log(`📷 Total photos: ${photos.length}, Voted: ${votedPhotoUrls.size}, Unvoted: ${unvotedPhotos.length}`)
+    const unvotedPhotos = photos.filter(photo => !urlsToExclude.has(photo.url))
+    console.log(`📷 Total photos: ${photos.length}, Voted: ${urlsToExclude.size}, Unvoted: ${unvotedPhotos.length}`)
 
     if (unvotedPhotos.length === 0) {
       console.log('📷 No more unvoted photos available')
@@ -196,13 +199,14 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       console.log(`🗳️ Voting for photo: ${photoUrl} in category: ${category}`)
 
       // Mark this photo as voted and save to user-specific localStorage
+      let updatedVotedUrls: Set<string> = new Set()
       if (currentEventCode && activeUserName) {
         setVotedPhotoUrls(prev => {
-          const updated = new Set([...prev, photoUrl])
+          updatedVotedUrls = new Set([...prev, photoUrl])
           const votingKey = getUserVotingKey(currentEventCode, activeUserName)
-          localStorage.setItem(votingKey, JSON.stringify([...updated]))
+          localStorage.setItem(votingKey, JSON.stringify([...updatedVotedUrls]))
           console.log(`📊 Saved vote for ${activeUserName} in event ${currentEventCode}`)
-          return updated
+          return updatedVotedUrls
         })
       }
 
@@ -218,7 +222,8 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
       // Show next random photo after animation starts
       setTimeout(() => {
-        const nextPhoto = getRandomVotingPhoto()
+        // Pass the updated voted URLs to ensure we don't show the same photo again
+        const nextPhoto = getRandomVotingPhoto(updatedVotedUrls)
         setCurrentVotingPhoto(nextPhoto)
         setIsVoting(false) // Re-enable voting
 
@@ -391,6 +396,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
           id,
           photo_url,
           file_name,
+          file_size,
           uploaded_at,
           event_participants!inner(user_name)
         `)
@@ -413,7 +419,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       const transformedPhotos: Photo[] = (photosData || []).map((photo: any) => ({
         url: photo.photo_url,
         fileName: photo.file_name,
-        size: 0, // We don't store size in Supabase yet
+        size: photo.file_size || 0,
         uploadedAt: photo.uploaded_at,
         userName: photo.event_participants.user_name
       }))

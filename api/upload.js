@@ -107,7 +107,7 @@ export default async function handler(req, res) {
           throw new Error('Participant not found in event');
         }
 
-        // Save photo metadata to event_photos table (without file_size to avoid schema cache issues)
+        // Save photo metadata to event_photos table
         const { data: photoData, error: photoError } = await supabase
           .from('event_photos')
           .insert({
@@ -115,6 +115,7 @@ export default async function handler(req, res) {
             participant_id: participantData.id,
             photo_url: blob.url,
             file_name: fileName,
+            file_size: buffer.length,
             uploaded_at: new Date().toISOString()
           })
           .select()
@@ -128,11 +129,18 @@ export default async function handler(req, res) {
         supabasePhotoId = photoData.id;
         console.log('✅ Photo metadata saved to Supabase with ID:', supabasePhotoId);
 
+        // Get current photo count and increment it
+        const { data: currentParticipant } = await supabase
+          .from('event_participants')
+          .select('photos_taken')
+          .eq('id', participantData.id)
+          .single();
+
         // Update participant photo count
         await supabase
           .from('event_participants')
           .update({
-            photos_taken: supabase.raw('photos_taken + 1'),
+            photos_taken: (currentParticipant?.photos_taken || 0) + 1,
             last_photo_at: new Date().toISOString()
           })
           .eq('id', participantData.id);
