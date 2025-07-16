@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import LobbyLanding from './LobbyLanding'
+import DirectEventJoin from './DirectEventJoin'
 import EventCreation, { type EventCreationData } from './EventCreation'
 import EventCreated from './EventCreated'
+import EventAdmin from './EventAdmin'
 import CameraInterface from './CameraInterface'
 import GameOverScreen from './GameOverScreen'
 import { usePhotoSession } from '../hooks/usePhotoSession'
@@ -19,7 +21,7 @@ import {
 } from '../lib/eventUtils'
 import { type Event } from '../lib/supabase'
 
-type AppState = 'lobby' | 'createEvent' | 'eventCreated' | 'camera' | 'gameOver'
+type AppState = 'lobby' | 'directJoin' | 'createEvent' | 'eventCreated' | 'admin' | 'camera' | 'gameOver'
 
 const MobileApp = () => {
   const [appState, setAppState] = useState<AppState>('lobby')
@@ -63,18 +65,18 @@ const MobileApp = () => {
 
           if (eventCodeFromUrl) {
             console.log('🔗 Event code detected from URL:', eventCodeFromUrl)
-            console.log('🔗 Setting prefilled code and going to lobby...')
+            console.log('🔗 Going directly to event join...')
 
-            // Set the prefilled code and go to lobby FIRST
+            // Go directly to DirectEventJoin component
             setPrefilledEventCode(eventCodeFromUrl.toUpperCase())
-            setAppState('lobby')
+            setAppState('directJoin')
 
             // Clear URL parameter AFTER state is set
             setTimeout(() => {
               window.history.replaceState({}, document.title, window.location.pathname)
             }, 100)
 
-            console.log('🔗 App state set to lobby, prefilled code:', eventCodeFromUrl.toUpperCase())
+            console.log('🔗 App state set to directJoin, event code:', eventCodeFromUrl.toUpperCase())
             return
           }
 
@@ -286,6 +288,51 @@ const MobileApp = () => {
     setPrefilledEventCode(undefined)
   }
 
+  // Handle successful direct join from QR code
+  const handleDirectJoinSuccess = async (session: EventSession) => {
+    setEventSession(session)
+
+    // Find the event to set current event
+    try {
+      const event = await findEventByCode(session.eventCode)
+      if (event) {
+        setCurrentEvent(event)
+      }
+    } catch (error) {
+      console.error('Error finding event after join:', error)
+    }
+
+    // Start photo session
+    const success = startSession(session.userName)
+    if (success) {
+      await authenticate()
+      setAppState('camera')
+    } else {
+      setError('Failed to start photo session')
+    }
+  }
+
+  // Handle direct join error
+  const handleDirectJoinError = (errorMessage: string) => {
+    setError(errorMessage)
+    setAppState('lobby')
+    setPrefilledEventCode(undefined)
+  }
+
+  // Handle admin access
+  const handleOpenAdmin = () => {
+    setAppState('admin')
+  }
+
+  const handleBackFromAdmin = () => {
+    setAppState('camera')
+  }
+
+  const handleEventEnded = () => {
+    // Event has been ended by admin, go back to lobby
+    handleRestart()
+  }
+
   return (
     <div className="min-h-screen bg-surface-primary relative overflow-hidden">
       {/* Background gradient overlay */}
@@ -309,6 +356,15 @@ const MobileApp = () => {
           />
         )}
 
+        {appState === 'directJoin' && prefilledEventCode && (
+          <DirectEventJoin
+            eventCode={prefilledEventCode}
+            onJoinSuccess={handleDirectJoinSuccess}
+            onError={handleDirectJoinError}
+            isLoading={isLoading}
+          />
+        )}
+
         {appState === 'createEvent' && (
           <EventCreation
             onCreateEvent={handleCreateEvent}
@@ -322,6 +378,15 @@ const MobileApp = () => {
             event={currentEvent}
             onEnterEvent={handleEnterCreatedEvent}
             isLoading={isLoading}
+          />
+        )}
+
+        {appState === 'admin' && currentEvent && eventSession && (
+          <EventAdmin
+            event={currentEvent}
+            currentUserName={eventSession.userName}
+            onBack={handleBackFromAdmin}
+            onEventEnded={handleEventEnded}
           />
         )}
 
@@ -358,9 +423,9 @@ const MobileApp = () => {
         )}
       </div>
 
-      {/* Premium Gallery Link - Fixed position - Only show if user is in an event */}
+      {/* Premium Gallery Link & Admin Button - Fixed position - Only show if user is in an event */}
       {eventSession && (
-        <div className="fixed top-6 right-6 z-50">
+        <div className="fixed top-6 right-6 z-50 flex flex-col gap-3">
           <a
             href={`/gallery?event=${eventSession.eventCode}&user=${encodeURIComponent(eventSession.userName)}`}
             className="group bg-surface-card hover:bg-surface-hover border border-border-primary
@@ -373,6 +438,22 @@ const MobileApp = () => {
               Gallery
             </span>
           </a>
+
+          {/* Admin Button - Only show for event creators */}
+          {currentEvent && currentEvent.created_by === eventSession.userName && appState === 'camera' && (
+            <button
+              onClick={handleOpenAdmin}
+              className="group bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40
+                         text-yellow-400 px-4 py-2.5 rounded-lg shadow-premium hover:shadow-premium-lg transition-all duration-300
+                         hover:-translate-y-0.5 active:translate-y-0 backdrop-blur-sm flex items-center gap-2"
+              title="Event Admin"
+            >
+              <span className="text-sm">⚙️</span>
+              <span className="text-sm font-medium tracking-wide">
+                Admin
+              </span>
+            </button>
+          )}
         </div>
       )}
 
