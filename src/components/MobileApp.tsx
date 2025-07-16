@@ -28,6 +28,7 @@ const MobileApp = () => {
   const [error, setError] = useState('')
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null)
   const [eventSession, setEventSession] = useState<EventSession | null>(null)
+  const [prefilledEventCode, setPrefilledEventCode] = useState<string | undefined>(undefined)
 
   const {
     userName,
@@ -54,6 +55,20 @@ const MobileApp = () => {
 
         if (isReady) {
           console.log('✅ App ready with Supabase integration!')
+
+          // Check for URL parameters (QR code scan)
+          const urlParams = new URLSearchParams(window.location.search)
+          const eventCodeFromUrl = urlParams.get('code')
+
+          if (eventCodeFromUrl) {
+            console.log('🔗 Event code detected from URL:', eventCodeFromUrl)
+            // Clear URL parameter to avoid confusion
+            window.history.replaceState({}, document.title, window.location.pathname)
+            // Set the prefilled code and go to lobby
+            setPrefilledEventCode(eventCodeFromUrl.toUpperCase())
+            setAppState('lobby')
+            return
+          }
 
           // Check for existing event session
           const savedSession = getEventSession()
@@ -258,6 +273,7 @@ const MobileApp = () => {
     setAppState('lobby')
     setCurrentEvent(null)
     setError('')
+    setPrefilledEventCode(undefined)
   }
 
   return (
@@ -279,6 +295,7 @@ const MobileApp = () => {
             onJoinEvent={handleJoinEvent}
             onCreateEvent={() => setAppState('createEvent')}
             isLoading={isLoading || !supabaseReady}
+            prefilledEventCode={prefilledEventCode}
           />
         )}
 

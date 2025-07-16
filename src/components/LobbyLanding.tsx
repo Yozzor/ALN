@@ -4,11 +4,12 @@ interface LobbyLandingProps {
   onJoinEvent: (eventCode: string, userName: string) => void
   onCreateEvent: () => void
   isLoading: boolean
+  prefilledEventCode?: string
 }
 
-const LobbyLanding = ({ onJoinEvent, onCreateEvent, isLoading }: LobbyLandingProps) => {
-  const [mode, setMode] = useState<'select' | 'join'>('select')
-  const [eventCode, setEventCode] = useState('')
+const LobbyLanding = ({ onJoinEvent, onCreateEvent, isLoading, prefilledEventCode }: LobbyLandingProps) => {
+  const [mode, setMode] = useState<'select' | 'join'>(prefilledEventCode ? 'join' : 'select')
+  const [eventCode, setEventCode] = useState(prefilledEventCode || '')
   const [userName, setUserName] = useState('')
   const [error, setError] = useState('')
 
@@ -66,10 +67,10 @@ const LobbyLanding = ({ onJoinEvent, onCreateEvent, isLoading }: LobbyLandingPro
               />
             </div>
             <h1 className="text-text-primary text-xl font-light mb-2 tracking-wide">
-              Join Event
+              {prefilledEventCode ? '🔗 Join Event' : 'Join Event'}
             </h1>
             <p className="text-text-tertiary text-sm font-light tracking-wider">
-              Enter your event code to join
+              {prefilledEventCode ? 'Event code detected! Enter your name to join.' : 'Enter your event code to join'}
             </p>
           </div>
 
@@ -78,19 +79,21 @@ const LobbyLanding = ({ onJoinEvent, onCreateEvent, isLoading }: LobbyLandingPro
             <form onSubmit={handleJoinSubmit} className="space-y-6">
               <div>
                 <label htmlFor="eventCode" className="block text-sm font-medium text-text-primary mb-3 tracking-wide">
-                  Event Code
+                  Event Code {prefilledEventCode && <span className="text-green-400">✓ Detected</span>}
                 </label>
                 <input
                   type="text"
                   id="eventCode"
                   value={eventCode}
                   onChange={(e) => setEventCode(e.target.value.toUpperCase())}
-                  className="input-field text-center text-lg py-4 font-mono tracking-widest"
+                  className={`input-field text-center text-lg py-4 font-mono tracking-widest ${
+                    prefilledEventCode ? 'border-green-500 bg-green-500/10' : ''
+                  }`}
                   placeholder="ABC123"
                   maxLength={6}
                   disabled={isLoading}
                   autoComplete="off"
-                  autoFocus
+                  autoFocus={!prefilledEventCode}
                 />
               </div>
 
@@ -107,6 +110,7 @@ const LobbyLanding = ({ onJoinEvent, onCreateEvent, isLoading }: LobbyLandingPro
                   placeholder="Enter your name"
                   disabled={isLoading}
                   autoComplete="given-name"
+                  autoFocus={!!prefilledEventCode}
                 />
               </div>
 
