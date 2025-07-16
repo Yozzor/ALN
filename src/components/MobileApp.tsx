@@ -33,8 +33,7 @@ const MobileApp = () => {
     userName,
     photosRemaining,
     startSession,
-    takePhoto,
-    isSessionActive
+    takePhoto
   } = usePhotoSession()
 
   const {

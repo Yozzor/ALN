@@ -13,7 +13,7 @@ export const generateEventCode = (): string => {
 // Check if event code is unique
 export const isEventCodeUnique = async (code: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('events')
       .select('id')
       .eq('event_code', code)

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { EVENT_TYPES, type EventType } from '../lib/supabase'
+import { type EventType } from '../lib/supabase'
 
 interface EventCreationProps {
   onCreateEvent: (eventData: EventCreationData) => void
@@ -10,22 +10,22 @@ interface EventCreationProps {
 export interface EventCreationData {
   title: string
   description?: string
-  eventType: EventType
-  maxParticipants: number
-  maxPhotosPerUser: number
-  durationMinutes: number
-  createdBy: string
+  event_type: EventType
+  max_participants: number
+  max_photos_per_user: number
+  duration_minutes: number
+  created_by: string
 }
 
 const EventCreation = ({ onCreateEvent, onBack, isLoading }: EventCreationProps) => {
   const [formData, setFormData] = useState<EventCreationData>({
     title: '',
     description: '',
-    eventType: 'wedding',
-    maxParticipants: 50,
-    maxPhotosPerUser: 10,
-    durationMinutes: 480, // 8 hours default
-    createdBy: ''
+    event_type: 'wedding',
+    max_participants: 50,
+    max_photos_per_user: 10,
+    duration_minutes: 480, // 8 hours default
+    created_by: ''
   })
   const [error, setError] = useState('')
 
@@ -37,12 +37,12 @@ const EventCreation = ({ onCreateEvent, onBack, isLoading }: EventCreationProps)
       return
     }
 
-    if (!formData.createdBy.trim()) {
+    if (!formData.created_by.trim()) {
       setError('Please enter your name as event organizer')
       return
     }
 
-    if (formData.createdBy.trim().length < 2) {
+    if (formData.created_by.trim().length < 2) {
       setError('Organizer name must be at least 2 characters')
       return
     }
@@ -52,7 +52,7 @@ const EventCreation = ({ onCreateEvent, onBack, isLoading }: EventCreationProps)
       ...formData,
       title: formData.title.trim(),
       description: formData.description?.trim(),
-      createdBy: formData.createdBy.trim()
+      created_by: formData.created_by.trim()
     })
   }
 
@@ -130,8 +130,8 @@ const EventCreation = ({ onCreateEvent, onBack, isLoading }: EventCreationProps)
               <input
                 type="text"
                 id="createdBy"
-                value={formData.createdBy}
-                onChange={(e) => setFormData(prev => ({ ...prev, createdBy: e.target.value }))}
+                value={formData.created_by}
+                onChange={(e) => setFormData(prev => ({ ...prev, created_by: e.target.value }))}
                 className="input-field text-base py-4 font-light"
                 placeholder="Enter your name"
                 disabled={isLoading}
@@ -148,9 +148,9 @@ const EventCreation = ({ onCreateEvent, onBack, isLoading }: EventCreationProps)
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, eventType: option.value as EventType }))}
+                    onClick={() => setFormData(prev => ({ ...prev, event_type: option.value as EventType }))}
                     className={`p-4 rounded-xl border-2 transition-all text-left ${
-                      formData.eventType === option.value
+                      formData.event_type === option.value
                         ? 'border-primary-500 bg-primary-500/10'
                         : 'border-surface-secondary hover:border-surface-hover'
                     }`}
@@ -170,8 +170,8 @@ const EventCreation = ({ onCreateEvent, onBack, isLoading }: EventCreationProps)
               </label>
               <select
                 id="duration"
-                value={formData.durationMinutes}
-                onChange={(e) => setFormData(prev => ({ ...prev, durationMinutes: parseInt(e.target.value) }))}
+                value={formData.duration_minutes}
+                onChange={(e) => setFormData(prev => ({ ...prev, duration_minutes: parseInt(e.target.value) }))}
                 className="input-field text-base py-4"
                 disabled={isLoading}
               >
@@ -192,8 +192,8 @@ const EventCreation = ({ onCreateEvent, onBack, isLoading }: EventCreationProps)
                 <input
                   type="number"
                   id="maxParticipants"
-                  value={formData.maxParticipants}
-                  onChange={(e) => setFormData(prev => ({ ...prev, maxParticipants: parseInt(e.target.value) || 50 }))}
+                  value={formData.max_participants}
+                  onChange={(e) => setFormData(prev => ({ ...prev, max_participants: parseInt(e.target.value) || 50 }))}
                   className="input-field text-base py-4"
                   min="5"
                   max="500"
@@ -208,8 +208,8 @@ const EventCreation = ({ onCreateEvent, onBack, isLoading }: EventCreationProps)
                 <input
                   type="number"
                   id="maxPhotos"
-                  value={formData.maxPhotosPerUser}
-                  onChange={(e) => setFormData(prev => ({ ...prev, maxPhotosPerUser: parseInt(e.target.value) || 10 }))}
+                  value={formData.max_photos_per_user}
+                  onChange={(e) => setFormData(prev => ({ ...prev, max_photos_per_user: parseInt(e.target.value) || 10 }))}
                   className="input-field text-base py-4"
                   min="1"
                   max="50"
@@ -243,7 +243,7 @@ const EventCreation = ({ onCreateEvent, onBack, isLoading }: EventCreationProps)
             <div className="space-y-3">
               <button
                 type="submit"
-                disabled={isLoading || !formData.title.trim() || !formData.createdBy.trim()}
+                disabled={isLoading || !formData.title.trim() || !formData.created_by.trim()}
                 className="btn-primary w-full text-base py-4 font-medium tracking-wide"
               >
                 {isLoading ? (
