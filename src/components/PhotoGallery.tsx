@@ -746,12 +746,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                         {new Date(photo.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs">📁</span>
-                      <p className="text-text-tertiary text-xs font-light">
-                        {Math.round(photo.size / 1024)}KB
-                      </p>
-                    </div>
+
                   </div>
                 </div>
               </div>
@@ -965,7 +960,6 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                   <h3 className="font-medium text-lg mb-2">Photo by {selectedPhoto.userName}</h3>
                   <div className="flex items-center gap-4 text-sm text-white/80">
                     <span>📅 {new Date(selectedPhoto.uploadedAt).toLocaleDateString()}</span>
-                    <span>📁 {(selectedPhoto.size / 1024).toFixed(1)} KB</span>
                   </div>
                 </div>
               </div>
