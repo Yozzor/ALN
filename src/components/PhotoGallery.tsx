@@ -147,7 +147,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
       // Extract photo URLs that user has voted on
       const votedUrls = new Set<string>()
-      votes?.forEach(vote => {
+      votes?.forEach((vote: any) => {
         if (vote.event_photos?.photo_url) {
           votedUrls.add(vote.event_photos.photo_url)
         }
