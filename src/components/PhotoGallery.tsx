@@ -955,105 +955,54 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
         </div>
       )}
 
-      {/* Header - COMPLETELY REWRITTEN FOR MOBILE */}
-      <div className="relative z-10 glass border-b border-border-primary/30 p-4">
-        <div className="max-w-4xl mx-auto">
+      {/* SUPER SIMPLE MOBILE HEADER - NO COMPLEX LAYOUTS */}
+      <div className="bg-surface-primary border-b border-border-primary/30 p-4">
+        <div className="w-full">
 
-          {/* Simple Mobile-First Layout */}
-          <div className="space-y-4">
-
-            {/* Title Row */}
-            <div className="text-center">
-              <h1 className="text-text-primary font-light text-xl sm:text-2xl tracking-wide">
-                Event Gallery
-              </h1>
-            </div>
-
-            {/* Event Info Row */}
-            <div className="text-center space-y-1">
-              <p className="text-primary-400 font-medium text-sm">Event: {currentEventCode}</p>
-              <p className="text-text-tertiary text-xs">
-                {showAllUsers
-                  ? `${photos.length} photos from all participants`
-                  : activeUserName
-                    ? `${photos.length} photos by ${activeUserName}`
-                    : `${photos.length} photos uploaded`
-                }
-              </p>
-            </div>
-
-            {/* Event Ended Banner */}
-            {eventState === 'ended' && (
-              <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg p-3">
-                <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-xl">🏆</span>
-                    <p className="text-purple-400 font-semibold">Event Completed!</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      calculateAwardWinners()
-                      setViewMode('awards')
-                    }}
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700
-                               text-white px-4 py-2 rounded-lg font-medium transition-all duration-300
-                               hover:shadow-lg flex items-center justify-center gap-2"
-                  >
-                    <span>🏆</span>
-                    View Awards
-                  </button>
-                </div>
-              </div>
-            )}
-
+          {/* Title - Simple and Centered */}
+          <div className="text-center mb-3">
+            <h1 className="text-white text-lg font-medium">Event Gallery</h1>
+            <p className="text-primary-400 text-sm mt-1">Event: {currentEventCode}</p>
+            <p className="text-text-tertiary text-xs mt-1">
+              {photos.length} photos uploaded
+            </p>
           </div>
-        </div>
-      </div>
 
-      {/* Control Panel - SIMPLIFIED MOBILE LAYOUT */}
-      <div className="relative z-10 bg-surface-secondary/50 border-b border-border-primary/20 p-4">
-        <div className="max-w-4xl mx-auto space-y-3">
-
-          {/* View Mode Toggle */}
+          {/* View Toggle - Simple Buttons */}
           {activeUserName && viewMode === 'gallery' && (
-            <div className="flex justify-center">
-              <div className="flex bg-surface-card rounded-lg border border-border-primary overflow-hidden">
-                <button
-                  onClick={() => setShowAllUsers(false)}
-                  className={`px-3 py-2 text-sm font-medium transition-all duration-300 ${
-                    !showAllUsers
-                      ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-                  }`}
-                >
-                  My Photos
-                </button>
-                <button
-                  onClick={() => setShowAllUsers(true)}
-                  className={`px-3 py-2 text-sm font-medium transition-all duration-300 ${
-                    showAllUsers
-                      ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-                  }`}
-                >
-                  All Photos
-                </button>
-              </div>
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={() => setShowAllUsers(false)}
+                className={`flex-1 py-2 px-3 rounded text-sm font-medium ${
+                  !showAllUsers
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-surface-card text-text-secondary'
+                }`}
+              >
+                My Photos
+              </button>
+              <button
+                onClick={() => setShowAllUsers(true)}
+                className={`flex-1 py-2 px-3 rounded text-sm font-medium ${
+                  showAllUsers
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-surface-card text-text-secondary'
+                }`}
+              >
+                All Photos
+              </button>
             </div>
           )}
 
-          {/* Action Buttons - STACKED ON MOBILE */}
+          {/* Action Buttons - Simple Stack */}
           <div className="space-y-2">
-            {/* Admin Controls */}
+            {/* Admin Start Button */}
             {isEventCreator && eventState === 'not_started' && (
               <button
                 onClick={() => setShowStartConfirmation(true)}
-                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700
-                           text-white px-4 py-2.5 rounded-lg font-medium transition-all duration-300
-                           flex items-center justify-center gap-2"
+                className="w-full bg-green-500 text-white py-2 px-4 rounded font-medium"
               >
-                <span>🚀</span>
-                Start Event
+                🚀 Start Event
               </button>
             )}
 
@@ -1065,12 +1014,9 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                     endEvent(eventData.id)
                   }
                 }}
-                className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700
-                           text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300
-                           flex items-center justify-center gap-2"
+                className="w-full bg-red-500 text-white py-2 px-4 rounded font-medium"
               >
-                <span>🏁</span>
-                Test End Event
+                🏁 Test End Event
               </button>
             )}
 
@@ -1078,12 +1024,9 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
             {viewMode === 'gallery' && photos.length > 0 && (
               <button
                 onClick={startVoting}
-                className="w-full bg-gradient-to-r from-accent-orange-500 to-accent-orange-600 hover:from-accent-orange-600 hover:to-accent-orange-700
-                           text-white px-4 py-2.5 rounded-lg font-medium transition-all duration-300
-                           flex items-center justify-center gap-2"
+                className="w-full bg-orange-500 text-white py-2 px-4 rounded font-medium"
               >
-                <span>🗳️</span>
-                Start Voting
+                🗳️ Start Voting
               </button>
             )}
 
@@ -1091,25 +1034,38 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
             {viewMode === 'voting' && (
               <button
                 onClick={() => setViewMode('gallery')}
-                className="w-full bg-surface-card hover:bg-surface-hover border border-border-primary text-text-primary
-                           px-4 py-2.5 rounded-lg font-medium transition-all duration-300
-                           flex items-center justify-center gap-2"
+                className="w-full bg-surface-card text-text-primary py-2 px-4 rounded font-medium border border-border-primary"
               >
-                <span>📸</span>
-                Back to Gallery
+                📸 Back to Gallery
               </button>
             )}
           </div>
 
-          {/* Back to App Link */}
-          <div className="text-center pt-2">
+          {/* Event Ended Banner */}
+          {eventState === 'ended' && (
+            <div className="bg-purple-500/20 border border-purple-500/30 rounded p-3 mt-3">
+              <div className="text-center">
+                <p className="text-purple-400 font-semibold mb-2">🏆 Event Completed!</p>
+                <button
+                  onClick={() => {
+                    calculateAwardWinners()
+                    setViewMode('awards')
+                  }}
+                  className="w-full bg-purple-500 text-white py-2 px-4 rounded font-medium"
+                >
+                  View Awards
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Back Link */}
+          <div className="text-center mt-3">
             <button
               onClick={() => window.history.back()}
-              className="inline-flex items-center text-primary-400 hover:text-primary-300 transition-all duration-300
-                         hover:-translate-x-1 group font-medium tracking-wide text-sm"
+              className="text-primary-400 text-sm"
             >
-              <span className="mr-2 group-hover:mr-3 transition-all duration-300">←</span>
-              Back to Camera
+              ← Back to Camera
             </button>
           </div>
 
