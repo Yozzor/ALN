@@ -18,14 +18,16 @@ export const useVercelBlob = () => {
     return true
   }, [])
 
-  // Upload photo to Vercel Blob via backend API
-  const uploadPhoto = useCallback(async (photoData: PhotoData, userName: string, eventContext?: { eventId: string, eventCode: string }) => {
+  // Upload photo to Vercel Blob via backend API with retry logic
+  const uploadPhoto = useCallback(async (photoData: PhotoData, userName: string, eventContext?: { eventId: string, eventCode: string }, retryCount = 0) => {
     setIsUploading(true)
     setUploadProgress(0)
     setError(null)
 
+    const maxRetries = 2;
+
     try {
-      console.log('📸 Starting photo upload to Vercel Blob...')
+      console.log(`📸 Starting photo upload to Vercel Blob... (attempt ${retryCount + 1}/${maxRetries + 1})`)
 
       // Convert blob to base64
       const base64Data = await blobToBase64(photoData.blob)
@@ -56,7 +58,24 @@ export const useVercelBlob = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
-        throw new Error(errorData.error || `Upload failed: ${response.status} ${response.statusText}`)
+        console.error('❌ Upload API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData: errorData
+        });
+
+        // Provide more specific error messages
+        let errorMessage = errorData.error || `Upload failed: ${response.status} ${response.statusText}`;
+
+        if (response.status === 500 && errorData.error?.includes('Blob storage token')) {
+          errorMessage = 'Server configuration error: Photo storage not properly configured. Please contact support.';
+        } else if (response.status === 413) {
+          errorMessage = 'Photo file too large. Please try taking the photo again with lower quality.';
+        } else if (response.status === 400) {
+          errorMessage = 'Invalid photo data. Please try taking the photo again.';
+        }
+
+        throw new Error(errorMessage)
       }
 
       const result = await response.json()
@@ -73,7 +92,28 @@ export const useVercelBlob = () => {
       }
 
     } catch (error) {
-      console.error('❌ Upload failed:', error)
+      console.error(`❌ Upload failed (attempt ${retryCount + 1}):`, error)
+
+      // Retry logic for network/temporary errors
+      if (retryCount < maxRetries) {
+        const isRetryableError = error instanceof Error && (
+          error.message.includes('fetch') ||
+          error.message.includes('network') ||
+          error.message.includes('timeout') ||
+          error.message.includes('500') ||
+          error.message.includes('502') ||
+          error.message.includes('503')
+        );
+
+        if (isRetryableError) {
+          console.log(`🔄 Retrying upload in 2 seconds... (${retryCount + 1}/${maxRetries})`);
+          setError(`Upload failed, retrying... (${retryCount + 1}/${maxRetries})`);
+
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          return uploadPhoto(photoData, userName, eventContext, retryCount + 1);
+        }
+      }
+
       const errorMessage = error instanceof Error ? error.message : 'Upload failed'
       setError(errorMessage)
       throw error

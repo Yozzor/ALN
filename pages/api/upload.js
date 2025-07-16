@@ -18,12 +18,25 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Debug: Log environment info
+    console.log('🔍 Environment check:');
+    console.log('- NODE_ENV:', process.env.NODE_ENV);
+    console.log('- VERCEL:', process.env.VERCEL);
+    console.log('- BLOB_READ_WRITE_TOKEN exists:', !!process.env.BLOB_READ_WRITE_TOKEN);
+    console.log('- BLOB_READ_WRITE_TOKEN length:', process.env.BLOB_READ_WRITE_TOKEN?.length || 0);
+
     // Check if BLOB_READ_WRITE_TOKEN is available
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       console.error('❌ BLOB_READ_WRITE_TOKEN not found in environment variables');
+      console.error('❌ Available env vars:', Object.keys(process.env).filter(key => key.includes('BLOB')));
       return res.status(500).json({
         success: false,
-        error: 'Server configuration error: Blob storage token not found'
+        error: 'Server configuration error: Blob storage token not found',
+        debug: {
+          hasToken: false,
+          nodeEnv: process.env.NODE_ENV,
+          isVercel: !!process.env.VERCEL
+        }
       });
     }
 
