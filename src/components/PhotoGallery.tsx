@@ -384,12 +384,16 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
     try {
       console.log('🚀 Starting event countdown...')
+      console.log('🚀 Current event code:', currentEventCode)
+      console.log('🚀 Event data:', eventData)
 
       const now = new Date()
       const countdownStartTime = now.toISOString()
 
+      console.log('🚀 Updating event state to countdown...')
+
       // Update event state to countdown
-      const { error } = await supabase
+      const { data: updateResult, error } = await supabase
         .from('events')
         .update({
           event_state: 'countdown',
@@ -397,6 +401,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
           event_started_at: countdownStartTime
         })
         .eq('event_code', currentEventCode)
+        .select()
 
       if (error) {
         console.error('❌ Failed to start event:', error)
@@ -404,6 +409,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
         return
       }
 
+      console.log('✅ Event update result:', updateResult)
       console.log('✅ Event started successfully!')
       setEventState('countdown')
       setShowStartConfirmation(false)
@@ -414,6 +420,12 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
         duration_minutes: eventData.duration_minutes,
         event_state: 'countdown'
       })
+
+      // Force refresh event data to ensure consistency
+      setTimeout(() => {
+        console.log('🔄 Force refreshing event data after start...')
+        fetchEventData()
+      }, 1000)
 
     } catch (error) {
       console.error('❌ Error starting event:', error)
@@ -747,13 +759,17 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   // Handle real-time event updates
   const handleEventUpdate = (updatedEvent: any) => {
     console.log('📡 Processing event update:', updatedEvent)
+    console.log('📡 Previous eventState:', eventState)
+    console.log('📡 New event_state from update:', updatedEvent.event_state)
 
     setEventData(updatedEvent)
     const newEventState = updatedEvent.event_state || 'not_started'
+    console.log('📡 Setting eventState to:', newEventState)
     setEventState(newEventState)
 
     // If event just started, show notification to all users
     if (newEventState === 'countdown' && eventState !== 'countdown') {
+      console.log('🚀 Event started! Showing notification...')
       setShowEventStartNotification(true)
       setTimeout(() => setShowEventStartNotification(false), 5000) // Hide after 5 seconds
     }
@@ -813,6 +829,10 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
         return
       }
 
+      console.log(`🔍 RAW EVENT DATA:`, event)
+      console.log(`🔍 EVENT STATE FROM DB:`, event.event_state)
+      console.log(`🔍 COUNTDOWN START TIME:`, event.countdown_start_time)
+
       setEventData(event)
       setEventState(event.event_state || 'not_started')
 
@@ -822,6 +842,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
       console.log(`👑 User ${activeUserName} is event creator: ${isCreator}`)
       console.log(`📊 Event state: ${event.event_state || 'not_started'}`)
+      console.log(`📊 Local eventState will be set to: ${event.event_state || 'not_started'}`)
 
     } catch (error) {
       console.error('Error fetching event data:', error)
@@ -972,21 +993,31 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
           {activeUserName && viewMode === 'gallery' && (
             <div className="flex gap-2 mb-3">
               <button
-                onClick={() => setShowAllUsers(false)}
-                className={`flex-1 py-2 px-3 rounded text-sm font-medium ${
+                onClick={() => {
+                  console.log('🔘 My Photos button clicked!')
+                  console.log('🔘 Current eventState:', eventState)
+                  console.log('🔘 Current showAllUsers:', showAllUsers)
+                  setShowAllUsers(false)
+                }}
+                className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-all duration-200 ${
                   !showAllUsers
                     ? 'bg-primary-500 text-white'
-                    : 'bg-surface-card text-text-secondary'
+                    : 'bg-surface-card text-text-secondary hover:bg-surface-hover'
                 }`}
               >
                 My Photos
               </button>
               <button
-                onClick={() => setShowAllUsers(true)}
-                className={`flex-1 py-2 px-3 rounded text-sm font-medium ${
+                onClick={() => {
+                  console.log('🔘 All Photos button clicked!')
+                  console.log('🔘 Current eventState:', eventState)
+                  console.log('🔘 Current showAllUsers:', showAllUsers)
+                  setShowAllUsers(true)
+                }}
+                className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-all duration-200 ${
                   showAllUsers
                     ? 'bg-primary-500 text-white'
-                    : 'bg-surface-card text-text-secondary'
+                    : 'bg-surface-card text-text-secondary hover:bg-surface-hover'
                 }`}
               >
                 All Photos
