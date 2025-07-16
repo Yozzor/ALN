@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { getEventSession } from '../lib/eventUtils'
+import { supabase } from '../lib/supabase'
 
 interface PhotoData {
   id: string
@@ -30,39 +31,94 @@ export const usePhotoSession = () => {
   const [sessionData, setSessionData] = useState<SessionData | null>(null)
   const [currentStorageKey, setCurrentStorageKey] = useState<string | null>(null)
 
-  // Load session from localStorage on mount and sync with event session
-  useEffect(() => {
-    const eventSession = getEventSession()
+  // Sync photo count with database
+  const syncWithDatabase = async (eventSession: any): Promise<number> => {
+    try {
+      console.log(`🔄 Syncing photo count with database for ${eventSession.userName}...`)
 
-    if (eventSession) {
-      // Generate user-specific storage key
-      const storageKey = getUserPhotoSessionKey(eventSession.eventCode, eventSession.userName)
-      setCurrentStorageKey(storageKey)
+      // Get participant data from database
+      const { data: participantData, error } = await supabase
+        .from('event_participants')
+        .select('photos_taken')
+        .eq('event_id', eventSession.eventId)
+        .eq('user_name', eventSession.userName)
+        .single()
 
-      // Check if we have a saved photo session for this specific user
-      const savedSession = localStorage.getItem(storageKey)
-      if (savedSession) {
-        try {
-          const parsed = JSON.parse(savedSession)
-          // Only use saved session if it matches current event and user
-          if (parsed.eventId === eventSession.eventId && parsed.userName === eventSession.userName) {
-            setSessionData(parsed)
-            console.log(`📱 Restored photo session for ${eventSession.userName} in event ${eventSession.eventCode}`)
-            return
-          }
-        } catch (error) {
-          console.error('Failed to parse saved photo session:', error)
-          localStorage.removeItem(storageKey)
-        }
+      if (error || !participantData) {
+        console.log('⚠️ Participant not found in database, assuming 0 photos taken')
+        return 0
       }
 
-      console.log(`🔄 Ready to create new photo session for ${eventSession.userName} in event ${eventSession.eventCode}`)
+      const photosTakenFromDB = participantData.photos_taken || 0
+      console.log(`📊 Database shows ${photosTakenFromDB} photos taken by ${eventSession.userName}`)
+      return photosTakenFromDB
 
-    } else {
-      // No event session - clear any current photo session
-      setSessionData(null)
-      setCurrentStorageKey(null)
+    } catch (error) {
+      console.error('❌ Failed to sync with database:', error)
+      return 0
     }
+  }
+
+  // Load session from localStorage on mount and sync with event session
+  useEffect(() => {
+    const initializeSession = async () => {
+      const eventSession = getEventSession()
+
+      if (eventSession) {
+        // Generate user-specific storage key
+        const storageKey = getUserPhotoSessionKey(eventSession.eventCode, eventSession.userName)
+        setCurrentStorageKey(storageKey)
+
+        // Sync with database to get actual photo count
+        const photosTakenFromDB = await syncWithDatabase(eventSession)
+        const maxPhotos = DEFAULT_MAX_PHOTOS
+        const photosRemaining = Math.max(0, maxPhotos - photosTakenFromDB)
+
+        // Check if we have a saved photo session for this specific user
+        const savedSession = localStorage.getItem(storageKey)
+        if (savedSession) {
+          try {
+            const parsed = JSON.parse(savedSession)
+            // Only use saved session if it matches current event and user
+            if (parsed.eventId === eventSession.eventId && parsed.userName === eventSession.userName) {
+              // Update with database count to ensure accuracy
+              const updatedSession = {
+                ...parsed,
+                photosRemaining: photosRemaining,
+                photosTaken: parsed.photosTaken.slice(0, photosTakenFromDB) // Keep only actual taken photos
+              }
+              setSessionData(updatedSession)
+              console.log(`📱 Restored photo session for ${eventSession.userName} in event ${eventSession.eventCode} (${photosTakenFromDB} photos taken, ${photosRemaining} remaining)`)
+              return
+            }
+          } catch (error) {
+            console.error('Failed to parse saved photo session:', error)
+            localStorage.removeItem(storageKey)
+          }
+        }
+
+        // Create new session with database-synced count
+        const newSession: SessionData = {
+          sessionId: uuidv4(),
+          userName: eventSession.userName,
+          photosRemaining: photosRemaining,
+          photosTaken: [], // We don't store actual photo data for existing photos
+          createdAt: Date.now(),
+          eventId: eventSession.eventId,
+          maxPhotos: maxPhotos
+        }
+
+        setSessionData(newSession)
+        console.log(`🔄 Created new photo session for ${eventSession.userName} in event ${eventSession.eventCode} (${photosTakenFromDB} photos taken, ${photosRemaining} remaining)`)
+
+      } else {
+        // No event session - clear any current photo session
+        setSessionData(null)
+        setCurrentStorageKey(null)
+      }
+    }
+
+    initializeSession()
   }, [])
 
   // Save session to localStorage whenever it changes
@@ -73,7 +129,7 @@ export const usePhotoSession = () => {
     }
   }, [sessionData, currentStorageKey])
 
-  const startSession = (userName: string): boolean => {
+  const startSession = async (userName: string): Promise<boolean> => {
     if (!userName.trim()) return false
 
     const eventSession = getEventSession()
@@ -91,21 +147,22 @@ export const usePhotoSession = () => {
     const storageKey = getUserPhotoSessionKey(eventSession.eventCode, userName.trim())
     setCurrentStorageKey(storageKey)
 
-    // TODO: Get max photos from event data via Supabase
-    // For now, use default but this should come from the event
+    // Sync with database to get actual photo count
+    const photosTakenFromDB = await syncWithDatabase(eventSession)
     const maxPhotos = DEFAULT_MAX_PHOTOS
+    const photosRemaining = Math.max(0, maxPhotos - photosTakenFromDB)
 
     const newSession: SessionData = {
       sessionId: uuidv4(),
       userName: userName.trim(),
-      photosRemaining: maxPhotos,
-      photosTaken: [],
+      photosRemaining: photosRemaining,
+      photosTaken: [], // We don't store actual photo data for existing photos
       createdAt: Date.now(),
       eventId: eventSession.eventId,
       maxPhotos: maxPhotos
     }
 
-    console.log(`📸 Starting photo session for ${userName.trim()} in event ${eventSession.eventCode}, Max photos: ${maxPhotos}`)
+    console.log(`📸 Starting photo session for ${userName.trim()} in event ${eventSession.eventCode} (${photosTakenFromDB} photos taken, ${photosRemaining} remaining)`)
     setSessionData(newSession)
     return true
   }

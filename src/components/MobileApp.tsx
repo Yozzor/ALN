@@ -116,7 +116,7 @@ const MobileApp = () => {
                 // Skip user selection - we have an active session, use it
 
                 // Single user - proceed normally
-                const success = startSession(savedSession.userName)
+                const success = await startSession(savedSession.userName)
                 if (success) {
                   await authenticate()
                   console.log('📸 Photo session started, photos remaining:', photosRemaining)
@@ -204,7 +204,7 @@ const MobileApp = () => {
       setEventSession(session)
       setCurrentEvent(event)
 
-      const success = startSession(userName)
+      const success = await startSession(userName)
       if (success) {
         await authenticate()
         setAppState('camera')
@@ -266,7 +266,7 @@ const MobileApp = () => {
       saveEventSession(session)
       setEventSession(session)
 
-      const success = startSession(userName)
+      const success = await startSession(userName)
       if (success) {
         await authenticate()
         setAppState('camera')
@@ -336,7 +336,7 @@ const MobileApp = () => {
     }
 
     // Start photo session
-    const success = startSession(session.userName)
+    const success = await startSession(session.userName)
     if (success) {
       await authenticate()
       setAppState('camera')
@@ -378,7 +378,7 @@ const MobileApp = () => {
         setCurrentEvent(event)
 
         // Start photo session for selected user
-        const success = startSession(session.userName)
+        const success = await startSession(session.userName)
         if (success) {
           await authenticate()
           setAppState('camera')
