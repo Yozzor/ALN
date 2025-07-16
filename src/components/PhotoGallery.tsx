@@ -955,44 +955,24 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
         </div>
       )}
 
-      {/* Header */}
-      <div className="relative z-10 glass border-b border-border-primary/30 p-4 sm:p-6">
-        <div className="max-w-6xl mx-auto overflow-hidden">
-          {/* Title and Photo Count - Top Section */}
-          <div className="text-center mb-4 animate-slide-up">
-            <h1 className="text-text-primary font-light text-2xl sm:text-3xl mb-2 tracking-wide">
-              Event Gallery
-            </h1>
+      {/* Header - COMPLETELY REWRITTEN FOR MOBILE */}
+      <div className="relative z-10 glass border-b border-border-primary/30 p-4">
+        <div className="max-w-4xl mx-auto">
 
+          {/* Simple Mobile-First Layout */}
+          <div className="space-y-4">
 
+            {/* Title Row */}
+            <div className="text-center">
+              <h1 className="text-text-primary font-light text-xl sm:text-2xl tracking-wide">
+                Event Gallery
+              </h1>
+            </div>
 
-            {eventState === 'ended' && (
-              <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-xl p-4 mb-4">
-                <div className="flex items-center justify-center gap-3">
-                  <span className="text-2xl">🏆</span>
-                  <div>
-                    <p className="text-purple-400 font-semibold text-lg">Event Completed!</p>
-                    <p className="text-text-secondary">Check out the awards ceremony!</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      calculateAwardWinners()
-                      setViewMode('awards')
-                    }}
-                    className="ml-4 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700
-                               text-white px-4 py-2 rounded-lg font-medium transition-all duration-300
-                               hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
-                  >
-                    <span className="text-lg">🏆</span>
-                    View Awards
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="text-text-tertiary text-sm font-light space-y-1">
-              <p className="text-primary-400 font-medium">Event: {currentEventCode}</p>
-              <p>
+            {/* Event Info Row */}
+            <div className="text-center space-y-1">
+              <p className="text-primary-400 font-medium text-sm">Event: {currentEventCode}</p>
+              <p className="text-text-tertiary text-xs">
                 {showAllUsers
                   ? `${photos.length} photos from all participants`
                   : activeUserName
@@ -1001,100 +981,131 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                 }
               </p>
             </div>
-          </div>
 
-          {/* Control Panel - Below Title */}
-          <div className="space-y-4 mb-4">
-            {/* View Mode Toggle */}
-            {activeUserName && viewMode === 'gallery' && (
-              <div className="flex justify-center">
-                <div className="flex bg-surface-card rounded-lg border border-border-primary overflow-hidden shadow-sm">
+            {/* Event Ended Banner */}
+            {eventState === 'ended' && (
+              <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg p-3">
+                <div className="text-center space-y-2">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-xl">🏆</span>
+                    <p className="text-purple-400 font-semibold">Event Completed!</p>
+                  </div>
                   <button
-                    onClick={() => setShowAllUsers(false)}
-                    className={`px-4 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 ${
-                      !showAllUsers
-                        ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-sm'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-                    }`}
+                    onClick={() => {
+                      calculateAwardWinners()
+                      setViewMode('awards')
+                    }}
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700
+                               text-white px-4 py-2 rounded-lg font-medium transition-all duration-300
+                               hover:shadow-lg flex items-center justify-center gap-2"
                   >
-                    My Photos
-                  </button>
-                  <button
-                    onClick={() => setShowAllUsers(true)}
-                    className={`px-4 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 ${
-                      showAllUsers
-                        ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-sm'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-                    }`}
-                  >
-                    All Photos
+                    <span>🏆</span>
+                    View Awards
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              {/* Admin Controls */}
-              {isEventCreator && eventState === 'not_started' && (
-                <button
-                  onClick={() => setShowStartConfirmation(true)}
-                  className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700
-                             text-white px-4 py-2.5 rounded-lg font-medium tracking-wide transition-all duration-300
-                             hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <span className="text-lg">🚀</span>
-                  Start Event
-                </button>
-              )}
+          </div>
+        </div>
+      </div>
 
-              {/* Admin Test Button - Force End Event */}
-              {isEventCreator && eventState !== 'ended' && (
-                <button
-                  onClick={() => {
-                    if (eventData?.id) {
-                      endEvent(eventData.id)
-                    }
-                  }}
-                  className="w-full sm:w-auto bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700
-                             text-white px-3 py-2 rounded-lg text-sm font-medium tracking-wide transition-all duration-300
-                             hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <span className="text-sm">🏁</span>
-                  Test End Event
-                </button>
-              )}
+      {/* Control Panel - SIMPLIFIED MOBILE LAYOUT */}
+      <div className="relative z-10 bg-surface-secondary/50 border-b border-border-primary/20 p-4">
+        <div className="max-w-4xl mx-auto space-y-3">
 
-              {/* Start Voting Button */}
-              {viewMode === 'gallery' && photos.length > 0 && (
+          {/* View Mode Toggle */}
+          {activeUserName && viewMode === 'gallery' && (
+            <div className="flex justify-center">
+              <div className="flex bg-surface-card rounded-lg border border-border-primary overflow-hidden">
                 <button
-                  onClick={startVoting}
-                  className="w-full sm:w-auto bg-gradient-to-r from-accent-orange-500 to-accent-orange-600 hover:from-accent-orange-600 hover:to-accent-orange-700
-                             text-white px-4 py-2.5 rounded-lg font-medium tracking-wide transition-all duration-300
-                             hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 shadow-sm"
+                  onClick={() => setShowAllUsers(false)}
+                  className={`px-3 py-2 text-sm font-medium transition-all duration-300 ${
+                    !showAllUsers
+                      ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                  }`}
                 >
-                  <span className="text-lg">🗳️</span>
-                  Start Voting
+                  My Photos
                 </button>
-              )}
-
-              {/* Back to Gallery Button */}
-              {viewMode === 'voting' && (
                 <button
-                  onClick={() => setViewMode('gallery')}
-                  className="w-full sm:w-auto bg-surface-card hover:bg-surface-hover border border-border-primary text-text-primary
-                             px-4 py-2.5 rounded-lg font-medium tracking-wide transition-all duration-300
-                             hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 shadow-sm"
+                  onClick={() => setShowAllUsers(true)}
+                  className={`px-3 py-2 text-sm font-medium transition-all duration-300 ${
+                    showAllUsers
+                      ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                  }`}
                 >
-                  <span className="text-lg">📸</span>
-                  Back to Gallery
+                  All Photos
                 </button>
-              )}
+              </div>
             </div>
+          )}
+
+          {/* Action Buttons - STACKED ON MOBILE */}
+          <div className="space-y-2">
+            {/* Admin Controls */}
+            {isEventCreator && eventState === 'not_started' && (
+              <button
+                onClick={() => setShowStartConfirmation(true)}
+                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700
+                           text-white px-4 py-2.5 rounded-lg font-medium transition-all duration-300
+                           flex items-center justify-center gap-2"
+              >
+                <span>🚀</span>
+                Start Event
+              </button>
+            )}
+
+            {/* Admin Test Button */}
+            {isEventCreator && eventState !== 'ended' && (
+              <button
+                onClick={() => {
+                  if (eventData?.id) {
+                    endEvent(eventData.id)
+                  }
+                }}
+                className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700
+                           text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300
+                           flex items-center justify-center gap-2"
+              >
+                <span>🏁</span>
+                Test End Event
+              </button>
+            )}
+
+            {/* Start Voting Button */}
+            {viewMode === 'gallery' && photos.length > 0 && (
+              <button
+                onClick={startVoting}
+                className="w-full bg-gradient-to-r from-accent-orange-500 to-accent-orange-600 hover:from-accent-orange-600 hover:to-accent-orange-700
+                           text-white px-4 py-2.5 rounded-lg font-medium transition-all duration-300
+                           flex items-center justify-center gap-2"
+              >
+                <span>🗳️</span>
+                Start Voting
+              </button>
+            )}
+
+            {/* Back to Gallery Button */}
+            {viewMode === 'voting' && (
+              <button
+                onClick={() => setViewMode('gallery')}
+                className="w-full bg-surface-card hover:bg-surface-hover border border-border-primary text-text-primary
+                           px-4 py-2.5 rounded-lg font-medium transition-all duration-300
+                           flex items-center justify-center gap-2"
+              >
+                <span>📸</span>
+                Back to Gallery
+              </button>
+            )}
           </div>
 
+        </div>
+      </div>
+
           {/* Back to App Link */}
-          <div className="text-center">
+          <div className="text-center pt-2">
             <button
               onClick={() => window.history.back()}
               className="inline-flex items-center text-primary-400 hover:text-primary-300 transition-all duration-300
