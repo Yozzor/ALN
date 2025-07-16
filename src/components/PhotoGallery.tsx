@@ -135,9 +135,10 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
         .from('photo_votes')
         .select(`
           photo_id,
-          event_photos!inner(photo_url)
+          event_photos!inner(photo_url, event_id)
         `)
         .eq('voter_participant_id', participantData.id)
+        .eq('event_photos.event_id', eventData.id)
 
       if (votesError) {
         console.error('❌ Error loading user votes:', votesError)
@@ -547,7 +548,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
         return
       }
 
-      // Get vote counts by category and photo
+      // Get vote counts by category and photo FOR THIS EVENT ONLY
       const { data: voteData, error: voteError } = await supabase
         .from('photo_votes')
         .select(`
@@ -557,9 +558,11 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
             photo_url,
             file_name,
             uploaded_at,
+            event_id,
             event_participants!inner(user_name)
           )
         `)
+        .eq('event_photos.event_id', eventData.id)
 
       if (voteError) {
         console.error('❌ Error fetching vote data:', voteError)
@@ -942,14 +945,12 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-orange-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
-      {/* Subtle Top Countdown Bar */}
+      {/* Minimal Countdown Indicator - Fixed Position */}
       {eventState === 'countdown' && countdownActive && (
-        <div className="bg-green-500/10 border-b border-green-500/20 px-4 py-2">
-          <div className="max-w-6xl mx-auto flex items-center justify-center gap-2 text-sm">
-            <span className="text-green-400">⏰</span>
-            <span className="text-green-400 font-medium">Event Active</span>
-            <span className="text-text-tertiary">•</span>
-            <span className="text-white font-mono">{formatTimeRemaining(timeRemaining)} remaining</span>
+        <div className="fixed top-4 right-4 z-50 bg-green-500/20 backdrop-blur-sm border border-green-500/30 rounded-full px-3 py-1.5 shadow-lg">
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-green-400 text-sm">⏰</span>
+            <span className="text-white font-mono font-medium">{formatTimeRemaining(timeRemaining)}</span>
           </div>
         </div>
       )}
