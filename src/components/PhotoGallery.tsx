@@ -1020,13 +1020,20 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               </button>
             )}
 
-            {/* Start Voting Button */}
+            {/* Start Voting Button - Only enabled when event is active */}
             {viewMode === 'gallery' && photos.length > 0 && (
               <button
                 onClick={startVoting}
-                className="w-full bg-orange-500 text-white py-2 px-4 rounded font-medium"
+                disabled={eventState === 'not_started' || eventState === 'ended'}
+                className={`w-full py-2 px-4 rounded font-medium transition-all duration-200 ${
+                  eventState === 'not_started' || eventState === 'ended'
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50'
+                    : 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl'
+                }`}
               >
                 🗳️ Start Voting
+                {eventState === 'not_started' && ' (Event Not Started)'}
+                {eventState === 'ended' && ' (Event Ended)'}
               </button>
             )}
 
