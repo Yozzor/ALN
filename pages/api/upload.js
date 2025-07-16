@@ -85,10 +85,23 @@ export default async function handler(req, res) {
     console.log('📤 Uploading to Vercel Blob:', blobFileName);
     console.log('📁 File size:', Math.round(buffer.length / 1024 * 100) / 100, 'KB');
 
-    // Upload to Vercel Blob
+    // Verify token exists
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) {
+      console.error('❌ BLOB_READ_WRITE_TOKEN not found in environment variables');
+      return res.status(500).json({
+        success: false,
+        error: 'Server configuration error: BLOB_READ_WRITE_TOKEN not configured'
+      });
+    }
+
+    console.log('🔑 Token found, length:', token.length, 'prefix:', token.substring(0, 20) + '...');
+
+    // Upload to Vercel Blob with explicit token
     const blob = await put(blobFileName, buffer, {
       access: 'public',
       contentType: 'image/jpeg',
+      token: token  // Explicitly pass the token
     });
 
     console.log('✅ Upload successful! Blob URL:', blob.url);
@@ -174,10 +187,22 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('❌ Vercel Blob upload failed:', error);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
+
+    // Check for specific Vercel Blob errors
+    let errorMessage = 'Upload failed: ' + (error.message || 'Unknown error');
+    if (error.message && error.message.includes('Access denied')) {
+      errorMessage = 'Vercel Blob access denied - token authentication failed';
+    } else if (error.message && error.message.includes('No token found')) {
+      errorMessage = 'Vercel Blob token not found - server configuration error';
+    }
 
     return res.status(500).json({
       success: false,
-      error: 'Upload failed: ' + (error.message || 'Unknown error'),
+      error: errorMessage,
+      errorType: error.name || 'Unknown',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }

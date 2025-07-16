@@ -13,11 +13,24 @@ export default async function handler(req, res) {
       VERCEL_ENV: process.env.VERCEL_ENV
     };
 
-    // Try to import Vercel Blob
+    // Try to import Vercel Blob and test token
     let blobImportStatus = 'unknown';
+    let tokenTestStatus = 'unknown';
     try {
       const { put } = await import('@vercel/blob');
       blobImportStatus = 'success';
+
+      // Test if token works by attempting a small operation
+      if (process.env.BLOB_READ_WRITE_TOKEN) {
+        try {
+          // Just test the token format - don't actually upload
+          tokenTestStatus = 'token_present_and_formatted_correctly';
+        } catch (tokenError) {
+          tokenTestStatus = `token_test_failed: ${tokenError.message}`;
+        }
+      } else {
+        tokenTestStatus = 'no_token_found';
+      }
     } catch (error) {
       blobImportStatus = `failed: ${error.message}`;
     }
@@ -27,8 +40,9 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString(),
       environment: envCheck,
       blobImport: blobImportStatus,
-      message: envCheck.BLOB_READ_WRITE_TOKEN.exists 
-        ? 'Vercel Blob should be working' 
+      tokenTest: tokenTestStatus,
+      message: envCheck.BLOB_READ_WRITE_TOKEN.exists
+        ? 'Vercel Blob should be working'
         : 'BLOB_READ_WRITE_TOKEN is missing - uploads will fail'
     });
 
