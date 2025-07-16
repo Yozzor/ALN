@@ -214,14 +214,43 @@ export interface EventSession {
   eventTitle: string
 }
 
+// Generate user-specific storage key
+const getUserSessionKey = (eventCode: string, userName: string): string => {
+  return `aln-event-session-${eventCode}-${userName.toLowerCase().replace(/[^a-z0-9]/g, '')}`
+}
+
+const getUserVotingKey = (eventCode: string, userName: string): string => {
+  return `aln-voted-photos-${eventCode}-${userName.toLowerCase().replace(/[^a-z0-9]/g, '')}`
+}
+
 export const saveEventSession = (session: EventSession): void => {
-  localStorage.setItem('aln-event-session', JSON.stringify(session))
+  const sessionKey = getUserSessionKey(session.eventCode, session.userName)
+  localStorage.setItem(sessionKey, JSON.stringify(session))
+
+  // Also save a reference to the current active session
+  localStorage.setItem('aln-current-session-key', sessionKey)
+
+  console.log(`💾 Saved session for ${session.userName} in event ${session.eventCode}`)
 }
 
 export const getEventSession = (): EventSession | null => {
   try {
-    const saved = localStorage.getItem('aln-event-session')
-    return saved ? JSON.parse(saved) : null
+    // Get the current active session key
+    const currentSessionKey = localStorage.getItem('aln-current-session-key')
+    if (!currentSessionKey) {
+      return null
+    }
+
+    const saved = localStorage.getItem(currentSessionKey)
+    if (!saved) {
+      // Clean up invalid reference
+      localStorage.removeItem('aln-current-session-key')
+      return null
+    }
+
+    const session = JSON.parse(saved)
+    console.log(`📱 Retrieved session for ${session.userName} in event ${session.eventCode}`)
+    return session
   } catch (error) {
     console.error('Error getting event session:', error)
     return null
@@ -229,6 +258,32 @@ export const getEventSession = (): EventSession | null => {
 }
 
 export const clearEventSession = (): void => {
-  localStorage.removeItem('aln-event-session')
-  localStorage.removeItem('aln-voted-photos') // Clear voting history too
+  const currentSessionKey = localStorage.getItem('aln-current-session-key')
+  if (currentSessionKey) {
+    localStorage.removeItem(currentSessionKey)
+    localStorage.removeItem('aln-current-session-key')
+
+    // Extract event code and user name to clear voting history
+    const session = getEventSession()
+    if (session) {
+      const votingKey = getUserVotingKey(session.eventCode, session.userName)
+      localStorage.removeItem(votingKey)
+    }
+  }
+
+  console.log('🗑️ Cleared current event session')
+}
+
+// Switch to a specific user session
+export const switchToUserSession = (eventCode: string, userName: string): boolean => {
+  const sessionKey = getUserSessionKey(eventCode, userName)
+  const saved = localStorage.getItem(sessionKey)
+
+  if (saved) {
+    localStorage.setItem('aln-current-session-key', sessionKey)
+    console.log(`🔄 Switched to session for ${userName} in event ${eventCode}`)
+    return true
+  }
+
+  return false
 }

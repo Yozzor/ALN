@@ -49,11 +49,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const [viewMode, setViewMode] = useState<'gallery' | 'voting'>('gallery')
   const [currentVotingPhoto, setCurrentVotingPhoto] = useState<Photo | null>(null)
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([])
-  const [votedPhotoUrls, setVotedPhotoUrls] = useState<Set<string>>(() => {
-    // Load voted photos from localStorage on init
-    const saved = localStorage.getItem('aln-voted-photos')
-    return saved ? new Set(JSON.parse(saved)) : new Set()
-  })
+  const [votedPhotoUrls, setVotedPhotoUrls] = useState<Set<string>>(new Set())
   const [isVoting, setIsVoting] = useState(false) // Prevent rapid clicking
   const [observationTimer, setObservationTimer] = useState(0) // 3-second observation timer
   const [canVote, setCanVote] = useState(false) // Whether user can vote (after observation)
@@ -68,6 +64,22 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   // Get event information
   const eventSession = getEventSession()
   const currentEventCode = urlEventCode || eventSession?.eventCode
+
+  // Generate user-specific voting key
+  const getUserVotingKey = (eventCode: string, userName: string): string => {
+    return `aln-voted-photos-${eventCode}-${userName.toLowerCase().replace(/[^a-z0-9]/g, '')}`
+  }
+
+  // Load user-specific voted photos
+  useEffect(() => {
+    if (currentEventCode && activeUserName) {
+      const votingKey = getUserVotingKey(currentEventCode, activeUserName)
+      const saved = localStorage.getItem(votingKey)
+      const votedUrls = saved ? new Set<string>(JSON.parse(saved)) : new Set<string>()
+      setVotedPhotoUrls(votedUrls)
+      console.log(`📊 Loaded ${votedUrls.size} voted photos for ${activeUserName} in event ${currentEventCode}`)
+    }
+  }, [currentEventCode, activeUserName])
 
   // Block access if no user name or event is available
   if (!activeUserName || !currentEventCode) {
@@ -183,12 +195,16 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       setIsVoting(true)
       console.log(`🗳️ Voting for photo: ${photoUrl} in category: ${category}`)
 
-      // Mark this photo as voted and save to localStorage
-      setVotedPhotoUrls(prev => {
-        const updated = new Set([...prev, photoUrl])
-        localStorage.setItem('aln-voted-photos', JSON.stringify([...updated]))
-        return updated
-      })
+      // Mark this photo as voted and save to user-specific localStorage
+      if (currentEventCode && activeUserName) {
+        setVotedPhotoUrls(prev => {
+          const updated = new Set([...prev, photoUrl])
+          const votingKey = getUserVotingKey(currentEventCode, activeUserName)
+          localStorage.setItem(votingKey, JSON.stringify([...updated]))
+          console.log(`📊 Saved vote for ${activeUserName} in event ${currentEventCode}`)
+          return updated
+        })
+      }
 
       // Find the category to get the emoji
       const selectedCategory = AWARD_CATEGORIES.find(cat => cat.id === category)

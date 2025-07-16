@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import LobbyLanding from './LobbyLanding'
 import DirectEventJoin from './DirectEventJoin'
+import UserSessionManager from './UserSessionManager'
 import EventCreation, { type EventCreationData } from './EventCreation'
 import EventCreated from './EventCreated'
 import EventAdmin from './EventAdmin'
@@ -21,7 +22,7 @@ import {
 } from '../lib/eventUtils'
 import { type Event } from '../lib/supabase'
 
-type AppState = 'lobby' | 'directJoin' | 'createEvent' | 'eventCreated' | 'admin' | 'camera' | 'gameOver'
+type AppState = 'lobby' | 'directJoin' | 'userSelect' | 'createEvent' | 'eventCreated' | 'admin' | 'camera' | 'gameOver'
 
 const MobileApp = () => {
   const [appState, setAppState] = useState<AppState>('lobby')
@@ -47,6 +48,18 @@ const MobileApp = () => {
     authenticate,
     uploadPhoto
   } = useVercelBlob()
+
+  // Check for multiple users for the same event
+  const checkForMultipleUsers = (eventCode: string): number => {
+    let userCount = 0
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith(`aln-event-session-${eventCode}-`)) {
+        userCount++
+      }
+    }
+    return userCount
+  }
 
   // Test Supabase connection and check for existing session on app load
   useEffect(() => {
@@ -91,7 +104,18 @@ const MobileApp = () => {
               const event = await findEventByCode(savedSession.eventCode)
               if (event) {
                 setCurrentEvent(event)
-                // Start the photo session with saved user name
+
+                // Check if there are multiple users for this event
+                const userCount = checkForMultipleUsers(savedSession.eventCode)
+                console.log(`👥 Found ${userCount} users for event ${savedSession.eventCode}`)
+
+                if (userCount > 1) {
+                  // Multiple users detected - show user selection
+                  setAppState('userSelect')
+                  return
+                }
+
+                // Single user - proceed normally
                 const success = startSession(savedSession.userName)
                 if (success) {
                   await authenticate()
@@ -338,6 +362,52 @@ const MobileApp = () => {
     handleRestart()
   }
 
+  // Handle user selection from UserSessionManager
+  const handleUserSelected = async (session: EventSession) => {
+    console.log('👤 User selected:', session.userName)
+    setEventSession(session)
+
+    // Find the event
+    try {
+      const event = await findEventByCode(session.eventCode)
+      if (event) {
+        setCurrentEvent(event)
+
+        // Start photo session for selected user
+        const success = startSession(session.userName)
+        if (success) {
+          await authenticate()
+          setAppState('camera')
+        } else {
+          console.error('❌ Failed to start photo session for selected user')
+          setAppState('lobby')
+        }
+      } else {
+        console.error('❌ Event not found for selected user')
+        setAppState('lobby')
+      }
+    } catch (error) {
+      console.error('❌ Error loading event for selected user:', error)
+      setAppState('lobby')
+    }
+  }
+
+  // Handle new user creation from UserSessionManager
+  const handleNewUserFromSelection = () => {
+    console.log('➕ Creating new user from selection')
+    // Clear current session and go to direct join
+    clearEventSession()
+    setEventSession(null)
+    setCurrentEvent(null)
+
+    if (currentEvent) {
+      setPrefilledEventCode(currentEvent.event_code)
+      setAppState('directJoin')
+    } else {
+      setAppState('lobby')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-surface-primary relative overflow-hidden">
       {/* Background gradient overlay */}
@@ -367,6 +437,14 @@ const MobileApp = () => {
             onJoinSuccess={handleDirectJoinSuccess}
             onError={handleDirectJoinError}
             isLoading={isLoading}
+          />
+        )}
+
+        {appState === 'userSelect' && currentEvent && (
+          <UserSessionManager
+            eventCode={currentEvent.event_code}
+            onUserSelected={handleUserSelected}
+            onNewUser={handleNewUserFromSelection}
           />
         )}
 

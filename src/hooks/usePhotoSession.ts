@@ -19,49 +19,59 @@ interface SessionData {
   maxPhotos?: number // Event-specific photo limit
 }
 
-const STORAGE_KEY = 'aln_photo_session'
 const DEFAULT_MAX_PHOTOS = 10
+
+// Generate user-specific storage key
+const getUserPhotoSessionKey = (eventCode: string, userName: string): string => {
+  return `aln_photo_session_${eventCode}_${userName.toLowerCase().replace(/[^a-z0-9]/g, '')}`
+}
 
 export const usePhotoSession = () => {
   const [sessionData, setSessionData] = useState<SessionData | null>(null)
+  const [currentStorageKey, setCurrentStorageKey] = useState<string | null>(null)
 
   // Load session from localStorage on mount and sync with event session
   useEffect(() => {
     const eventSession = getEventSession()
-    const savedSession = localStorage.getItem(STORAGE_KEY)
 
     if (eventSession) {
-      // If we have an event session, check if photo session matches
+      // Generate user-specific storage key
+      const storageKey = getUserPhotoSessionKey(eventSession.eventCode, eventSession.userName)
+      setCurrentStorageKey(storageKey)
+
+      // Check if we have a saved photo session for this specific user
+      const savedSession = localStorage.getItem(storageKey)
       if (savedSession) {
         try {
           const parsed = JSON.parse(savedSession)
-          // Only use saved session if it matches current event
+          // Only use saved session if it matches current event and user
           if (parsed.eventId === eventSession.eventId && parsed.userName === eventSession.userName) {
             setSessionData(parsed)
+            console.log(`📱 Restored photo session for ${eventSession.userName} in event ${eventSession.eventCode}`)
             return
           }
         } catch (error) {
-          console.error('Failed to parse saved session:', error)
+          console.error('Failed to parse saved photo session:', error)
+          localStorage.removeItem(storageKey)
         }
       }
 
-      // Create new photo session for current event
-      console.log('🔄 Creating new photo session for event:', eventSession.eventCode)
-      // We'll get the max photos from the event when starting the session
+      console.log(`🔄 Ready to create new photo session for ${eventSession.userName} in event ${eventSession.eventCode}`)
 
-    } else if (savedSession) {
-      // No event session but we have a saved photo session - this shouldn't happen in new system
-      console.warn('⚠️ Found photo session without event session - clearing')
-      localStorage.removeItem(STORAGE_KEY)
+    } else {
+      // No event session - clear any current photo session
+      setSessionData(null)
+      setCurrentStorageKey(null)
     }
   }, [])
 
   // Save session to localStorage whenever it changes
   useEffect(() => {
-    if (sessionData) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData))
+    if (sessionData && currentStorageKey) {
+      localStorage.setItem(currentStorageKey, JSON.stringify(sessionData))
+      console.log(`💾 Saved photo session for ${sessionData.userName} in event ${sessionData.eventId}`)
     }
-  }, [sessionData])
+  }, [sessionData, currentStorageKey])
 
   const startSession = (userName: string): boolean => {
     if (!userName.trim()) return false
@@ -71,6 +81,15 @@ export const usePhotoSession = () => {
       console.error('❌ Cannot start photo session without event session')
       return false
     }
+
+    if (eventSession.userName !== userName.trim()) {
+      console.error('❌ Photo session username mismatch:', eventSession.userName, 'vs', userName.trim())
+      return false
+    }
+
+    // Set the storage key for this specific user
+    const storageKey = getUserPhotoSessionKey(eventSession.eventCode, userName.trim())
+    setCurrentStorageKey(storageKey)
 
     // TODO: Get max photos from event data via Supabase
     // For now, use default but this should come from the event
@@ -86,7 +105,7 @@ export const usePhotoSession = () => {
       maxPhotos: maxPhotos
     }
 
-    console.log('📸 Starting photo session for event:', eventSession.eventCode, 'Max photos:', maxPhotos)
+    console.log(`📸 Starting photo session for ${userName.trim()} in event ${eventSession.eventCode}, Max photos: ${maxPhotos}`)
     setSessionData(newSession)
     return true
   }
@@ -118,8 +137,11 @@ export const usePhotoSession = () => {
 
   const resetSession = () => {
     console.log('🗑️ Clearing photo session')
+    if (currentStorageKey) {
+      localStorage.removeItem(currentStorageKey)
+    }
     setSessionData(null)
-    localStorage.removeItem(STORAGE_KEY)
+    setCurrentStorageKey(null)
   }
 
   // Clear session when event changes
