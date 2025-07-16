@@ -1101,9 +1101,6 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
             )}
           </div>
 
-        </div>
-      </div>
-
           {/* Back to App Link */}
           <div className="text-center pt-2">
             <button
@@ -1115,6 +1112,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               Back to Camera
             </button>
           </div>
+
         </div>
       </div>
 
@@ -1303,8 +1301,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       </div>
 
       {/* Voting Interface */}
-      {viewMode === 'voting' && (
-        currentVotingPhoto ? (
+      {viewMode === 'voting' && currentVotingPhoto && (
         <div className="fixed inset-0 bg-black z-[90] flex flex-col overflow-y-auto">
           {/* Voting Photo */}
           <div className="flex-shrink-0 relative flex items-center justify-center p-4 min-h-[50vh] max-h-[60vh]">
@@ -1388,8 +1385,10 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
             </div>
           </div>
         </div>
-        ) : (
-          /* No More Photos Interface */
+      )}
+
+      {/* No More Photos Interface */}
+      {viewMode === 'voting' && !currentVotingPhoto && (
           <div className="fixed inset-0 bg-black z-[90] flex flex-col items-center justify-center p-8">
             <div className="text-center max-w-md">
               {/* Icon */}
@@ -1426,7 +1425,6 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               </div>
             </div>
           </div>
-        )
       )}
 
       {/* Refresh Button */}
@@ -1548,6 +1546,23 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                 </div>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* No Photos to Vote State */}
+      {viewMode === 'voting' && !currentVotingPhoto && (
+        <div className="fixed inset-0 bg-black z-[90] flex items-center justify-center">
+          <div className="text-center text-white">
+            <div className="text-6xl mb-4">📸</div>
+            <h2 className="text-2xl mb-4">No more photos to vote on!</h2>
+            <p className="text-white/60 mb-8">You've voted on all available photos.</p>
+            <button
+              onClick={() => setViewMode('gallery')}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl"
+            >
+              Back to Gallery
+            </button>
           </div>
         </div>
       )}
