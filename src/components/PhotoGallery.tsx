@@ -54,6 +54,12 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const [observationTimer, setObservationTimer] = useState(0) // 3-second observation timer
   const [canVote, setCanVote] = useState(false) // Whether user can vote (after observation)
 
+  // Admin and event state management
+  const [isEventCreator, setIsEventCreator] = useState(false)
+  const [eventState, setEventState] = useState<'not_started' | 'countdown' | 'active' | 'ended'>('not_started')
+  const [eventData, setEventData] = useState<any>(null)
+  const [showStartConfirmation, setShowStartConfirmation] = useState(false)
+
   // Get user and event from URL params or session data
   const [searchParams] = useSearchParams()
   const urlUser = searchParams.get('user')
@@ -115,6 +121,7 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   useEffect(() => {
     if (currentEventCode) {
       fetchPhotos()
+      fetchEventData()
     }
   }, [showAllUsers, activeUserName, currentEventCode])
 
@@ -262,6 +269,47 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     }, 100)
   }
 
+  // Admin function to start the event
+  const startEvent = async () => {
+    if (!isEventCreator || !eventData || !currentEventCode) {
+      console.error('❌ Not authorized to start event')
+      return
+    }
+
+    try {
+      console.log('🚀 Starting event countdown...')
+
+      const now = new Date()
+      const countdownStartTime = now.toISOString()
+
+      // Update event state to countdown
+      const { error } = await supabase
+        .from('events')
+        .update({
+          event_state: 'countdown',
+          countdown_start_time: countdownStartTime,
+          event_started_at: countdownStartTime
+        })
+        .eq('event_code', currentEventCode)
+
+      if (error) {
+        console.error('❌ Failed to start event:', error)
+        alert('Failed to start event. Please try again.')
+        return
+      }
+
+      console.log('✅ Event started successfully!')
+      setEventState('countdown')
+      setShowStartConfirmation(false)
+
+      // TODO: Add notification to all users that event has started
+
+    } catch (error) {
+      console.error('❌ Error starting event:', error)
+      alert('Failed to start event. Please try again.')
+    }
+  }
+
   // Create floating emoji animation with smooth staggered fade-ins
   const createFloatingEmojis = (emoji: string) => {
     console.log(`🎆 Creating floating emojis for: ${emoji}`)
@@ -361,6 +409,39 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     } catch (error) {
       console.error('Failed to download photo:', error)
       alert('Failed to download photo. Please try again.')
+    }
+  }
+
+  const fetchEventData = async () => {
+    try {
+      if (!currentEventCode || !activeUserName) return
+
+      console.log(`🎯 Fetching event data for: ${currentEventCode}`)
+
+      // Get event details including creator and state
+      const { data: event, error: eventError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('event_code', currentEventCode)
+        .single()
+
+      if (eventError || !event) {
+        console.error('Event not found:', eventError)
+        return
+      }
+
+      setEventData(event)
+      setEventState(event.event_state || 'not_started')
+
+      // Check if current user is the event creator
+      const isCreator = event.created_by === activeUserName
+      setIsEventCreator(isCreator)
+
+      console.log(`👑 User ${activeUserName} is event creator: ${isCreator}`)
+      console.log(`📊 Event state: ${event.event_state || 'not_started'}`)
+
+    } catch (error) {
+      console.error('Error fetching event data:', error)
     }
   }
 
@@ -528,6 +609,19 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                   All Photos
                 </button>
               </div>
+            )}
+
+            {/* Admin Controls */}
+            {isEventCreator && eventState === 'not_started' && (
+              <button
+                onClick={() => setShowStartConfirmation(true)}
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700
+                           text-white px-4 py-2.5 rounded-lg font-medium tracking-wide transition-all duration-300
+                           hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 shadow-sm whitespace-nowrap"
+              >
+                <span className="text-lg">🚀</span>
+                Start Event
+              </button>
             )}
 
             {/* Start Voting Button */}
@@ -1026,6 +1120,41 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
           </div>
         </div>
       ))}
+
+      {/* Start Event Confirmation Dialog */}
+      {showStartConfirmation && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-surface-card rounded-2xl p-8 max-w-md w-full border border-border-primary shadow-premium animate-fade-in">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <span className="text-2xl">🚀</span>
+              </div>
+              <h3 className="text-xl font-semibold text-text-primary mb-2">Start Event Countdown?</h3>
+              <p className="text-text-secondary">
+                This will start the {eventData?.duration_minutes ? Math.floor(eventData.duration_minutes / 60) : '?'}-hour countdown for all participants.
+                Once started, users will have the full duration to upload photos and vote.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowStartConfirmation(false)}
+                className="flex-1 px-4 py-3 bg-surface-hover hover:bg-surface-tertiary text-text-secondary hover:text-text-primary
+                           rounded-xl transition-all duration-200 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={startEvent}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700
+                           text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+              >
+                Start Now! 🎉
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
