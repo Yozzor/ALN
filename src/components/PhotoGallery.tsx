@@ -200,12 +200,11 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     if (currentEventCode) {
       fetchPhotos()
       fetchEventData()
-      setupRealtimeSubscription()
-    }
 
-    return () => {
-      // Cleanup subscription on unmount
-      supabase.removeAllChannels()
+      // Setup subscription with proper cleanup
+      const cleanup = setupRealtimeSubscription()
+
+      return cleanup
     }
   }, [showAllUsers, activeUserName, currentEventCode])
 
@@ -730,12 +729,16 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
   // Setup real-time subscription for event updates
   const setupRealtimeSubscription = () => {
-    if (!currentEventCode) return
+    if (!currentEventCode) return () => {}
 
     console.log(`🔄 Setting up realtime subscription for event: ${currentEventCode}`)
 
+    // Create unique channel name with timestamp to avoid conflicts
+    const channelName = `event-updates-${currentEventCode}-${Date.now()}`
+    console.log(`🔄 Channel name: ${channelName}`)
+
     const channel = supabase
-      .channel(`event-${currentEventCode}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -746,12 +749,22 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
         },
         (payload) => {
           console.log('🔄 Event update received:', payload)
+          console.log('🔄 Payload new data:', payload.new)
           handleEventUpdate(payload.new)
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log(`🔄 Subscription status: ${status}`)
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to event updates!')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Channel subscription error!')
+        }
+      })
 
+    // Return cleanup function
     return () => {
+      console.log(`🧹 Cleaning up subscription for channel: ${channelName}`)
       supabase.removeChannel(channel)
     }
   }
@@ -759,31 +772,39 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   // Handle real-time event updates
   const handleEventUpdate = (updatedEvent: any) => {
     console.log('📡 Processing event update:', updatedEvent)
-    console.log('📡 Previous eventState:', eventState)
     console.log('📡 New event_state from update:', updatedEvent.event_state)
+    console.log('📡 Current user:', activeUserName)
 
+    // Update event data immediately
     setEventData(updatedEvent)
     const newEventState = updatedEvent.event_state || 'not_started'
     console.log('📡 Setting eventState to:', newEventState)
-    setEventState(newEventState)
 
-    // If event just started, show notification to all users
-    if (newEventState === 'countdown' && eventState !== 'countdown') {
-      console.log('🚀 Event started! Showing notification...')
-      setShowEventStartNotification(true)
-      setTimeout(() => setShowEventStartNotification(false), 5000) // Hide after 5 seconds
-    }
+    // Force state update with React's functional update to ensure latest state
+    setEventState(prevState => {
+      console.log('📡 State transition:', prevState, '->', newEventState)
 
-    // If event just ended, force ALL users to awards ceremony
-    if (newEventState === 'ended' && eventState !== 'ended') {
-      console.log('🏁 Event ended! Forcing all users to awards ceremony...')
-      calculateAwardWinners()
-      setViewMode('awards')
-      setCountdownActive(false)
-    }
+      // If event just started, show notification to all users
+      if (newEventState === 'countdown' && prevState !== 'countdown') {
+        console.log('🚀 Event started! Showing notification to user:', activeUserName)
+        setShowEventStartNotification(true)
+        setTimeout(() => setShowEventStartNotification(false), 5000) // Hide after 5 seconds
+      }
+
+      // If event just ended, force ALL users to awards ceremony
+      if (newEventState === 'ended' && prevState !== 'ended') {
+        console.log('🏁 Event ended! Forcing all users to awards ceremony...')
+        calculateAwardWinners()
+        setViewMode('awards')
+        setCountdownActive(false)
+      }
+
+      return newEventState
+    })
 
     // Calculate time remaining if countdown is active
     if (newEventState === 'countdown' && updatedEvent.countdown_start_time) {
+      console.log('⏰ Calculating time remaining for countdown...')
       calculateTimeRemaining(updatedEvent)
     }
   }
@@ -813,9 +834,12 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
   const fetchEventData = async () => {
     try {
-      if (!currentEventCode || !activeUserName) return
+      if (!currentEventCode || !activeUserName) {
+        console.log('🎯 Skipping fetchEventData - missing eventCode or userName')
+        return
+      }
 
-      console.log(`🎯 Fetching event data for: ${currentEventCode}`)
+      console.log(`🎯 Fetching event data for: ${currentEventCode} (user: ${activeUserName})`)
 
       // Get event details including creator and state
       const { data: event, error: eventError } = await supabase
@@ -825,27 +849,35 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
         .single()
 
       if (eventError || !event) {
-        console.error('Event not found:', eventError)
+        console.error('❌ Event not found:', eventError)
         return
       }
 
       console.log(`🔍 RAW EVENT DATA:`, event)
       console.log(`🔍 EVENT STATE FROM DB:`, event.event_state)
       console.log(`🔍 COUNTDOWN START TIME:`, event.countdown_start_time)
+      console.log(`🔍 CREATED BY:`, event.created_by)
 
       setEventData(event)
-      setEventState(event.event_state || 'not_started')
+      const newState = event.event_state || 'not_started'
+      console.log(`📊 Setting eventState from ${eventState} to: ${newState}`)
+      setEventState(newState)
 
       // Check if current user is the event creator
       const isCreator = event.created_by === activeUserName
       setIsEventCreator(isCreator)
 
       console.log(`👑 User ${activeUserName} is event creator: ${isCreator}`)
-      console.log(`📊 Event state: ${event.event_state || 'not_started'}`)
-      console.log(`📊 Local eventState will be set to: ${event.event_state || 'not_started'}`)
+      console.log(`📊 Final event state: ${newState}`)
+
+      // If event is in countdown, calculate time remaining
+      if (newState === 'countdown' && event.countdown_start_time) {
+        console.log('⏰ Event is in countdown, calculating time remaining...')
+        calculateTimeRemaining(event)
+      }
 
     } catch (error) {
-      console.error('Error fetching event data:', error)
+      console.error('❌ Error fetching event data:', error)
     }
   }
 
@@ -991,34 +1023,42 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
           {/* View Toggle - Simple Buttons */}
           {activeUserName && viewMode === 'gallery' && (
-            <div className="flex gap-2 mb-3">
+            <div className="flex gap-2 mb-3 relative z-10">
               <button
-                onClick={() => {
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
                   console.log('🔘 My Photos button clicked!')
                   console.log('🔘 Current eventState:', eventState)
                   console.log('🔘 Current showAllUsers:', showAllUsers)
                   setShowAllUsers(false)
                 }}
-                className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-all duration-200 ${
+                className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-all duration-200 cursor-pointer select-none ${
                   !showAllUsers
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-surface-card text-text-secondary hover:bg-surface-hover'
+                    ? 'bg-primary-500 text-white shadow-md'
+                    : 'bg-surface-card text-text-secondary hover:bg-surface-hover active:bg-surface-hover'
                 }`}
+                style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
               >
                 My Photos
               </button>
               <button
-                onClick={() => {
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
                   console.log('🔘 All Photos button clicked!')
                   console.log('🔘 Current eventState:', eventState)
                   console.log('🔘 Current showAllUsers:', showAllUsers)
                   setShowAllUsers(true)
                 }}
-                className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-all duration-200 ${
+                className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-all duration-200 cursor-pointer select-none ${
                   showAllUsers
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-surface-card text-text-secondary hover:bg-surface-hover'
+                    ? 'bg-primary-500 text-white shadow-md'
+                    : 'bg-surface-card text-text-secondary hover:bg-surface-hover active:bg-surface-hover'
                 }`}
+                style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
               >
                 All Photos
               </button>
@@ -1064,6 +1104,8 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               >
                 🗳️ Start Voting
                 {eventState === 'not_started' && ' (Event Not Started)'}
+                {eventState === 'countdown' && ' (Event Active!)'}
+                {eventState === 'active' && ' (Event Active!)'}
                 {eventState === 'ended' && ' (Event Ended)'}
               </button>
             )}

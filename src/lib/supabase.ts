@@ -22,6 +22,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
+// Test real-time connection on initialization
+console.log('🔄 Supabase client initialized')
+console.log('🔄 Real-time enabled:', !!supabase.realtime)
+
 // Database types (will be generated from Supabase)
 export interface Database {
   public: {
