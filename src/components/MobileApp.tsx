@@ -34,7 +34,8 @@ const MobileApp = () => {
     userName,
     photosRemaining,
     startSession,
-    takePhoto
+    takePhoto,
+    clearSessionForNewEvent
   } = usePhotoSession()
 
   const {
@@ -63,11 +64,16 @@ const MobileApp = () => {
           if (eventCodeFromUrl) {
             console.log('🔗 Event code detected from URL:', eventCodeFromUrl)
             console.log('🔗 Setting prefilled code and going to lobby...')
-            // Clear URL parameter to avoid confusion
-            window.history.replaceState({}, document.title, window.location.pathname)
-            // Set the prefilled code and go to lobby
+
+            // Set the prefilled code and go to lobby FIRST
             setPrefilledEventCode(eventCodeFromUrl.toUpperCase())
             setAppState('lobby')
+
+            // Clear URL parameter AFTER state is set
+            setTimeout(() => {
+              window.history.replaceState({}, document.title, window.location.pathname)
+            }, 100)
+
             console.log('🔗 App state set to lobby, prefilled code:', eventCodeFromUrl.toUpperCase())
             return
           }
@@ -265,7 +271,9 @@ const MobileApp = () => {
   }
 
   const handleRestart = () => {
+    console.log('🔄 Restarting app - clearing all sessions')
     clearEventSession()
+    clearSessionForNewEvent()
     setEventSession(null)
     setCurrentEvent(null)
     setAppState('lobby')
