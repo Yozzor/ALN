@@ -9,6 +9,8 @@ interface CameraInterfaceProps {
   isUploading: boolean
   isAuthenticated: boolean
   blobError?: string | null
+  eventStatus?: 'waiting' | 'active' | 'voting' | 'completed'
+  eventTitle?: string
 }
 
 const CameraInterface = ({
@@ -17,7 +19,9 @@ const CameraInterface = ({
   onPhotoCapture,
   isUploading,
   isAuthenticated,
-  blobError
+  blobError,
+  eventStatus = 'active',
+  eventTitle
 }: CameraInterfaceProps) => {
   const [showPreview, setShowPreview] = useState(false)
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
@@ -146,6 +150,30 @@ const CameraInterface = ({
               }`}></div>
               <p className="text-text-tertiary text-xs font-light tracking-wide">
                 {isAuthenticated ? 'Storage Ready' : 'Storage not ready'}
+              </p>
+            </div>
+          </div>
+
+          {/* Event Status */}
+          <div className="text-right animate-slide-up" style={{ animationDelay: '100ms' }}>
+            {eventTitle && (
+              <p className="text-text-secondary text-sm font-medium mb-1 tracking-wide">
+                {eventTitle}
+              </p>
+            )}
+            <div className="flex items-center justify-end space-x-2">
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                eventStatus === 'active'
+                  ? 'bg-accent-emerald-500 animate-pulse'
+                  : eventStatus === 'waiting'
+                  ? 'bg-amber-400'
+                  : 'bg-red-500'
+              }`}></div>
+              <p className="text-text-tertiary text-xs font-light tracking-wide capitalize">
+                {eventStatus === 'active' ? 'Event Live' :
+                 eventStatus === 'waiting' ? 'Event Starting Soon' :
+                 eventStatus === 'voting' ? 'Voting Phase' :
+                 'Event Ended'}
               </p>
             </div>
           </div>

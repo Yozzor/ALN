@@ -553,14 +553,14 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
           {/* Back to App Link */}
           <div className="text-center">
-            <a
-              href="/"
+            <button
+              onClick={() => window.history.back()}
               className="inline-flex items-center text-primary-400 hover:text-primary-300 transition-all duration-300
                          hover:-translate-x-1 group font-medium tracking-wide text-sm"
             >
               <span className="mr-2 group-hover:mr-3 transition-all duration-300">←</span>
               Back to Camera
-            </a>
+            </button>
           </div>
         </div>
       </div>

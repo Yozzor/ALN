@@ -285,11 +285,15 @@ const MobileApp = () => {
     // Take photo (decrements counter)
     const photoData = takePhoto(photoBlob)
 
-    if (photoData && eventSession) {
-      // Upload to Vercel Blob
+    if (photoData && eventSession && currentEvent) {
+      // Upload to Vercel Blob with event context
       try {
-        await uploadPhoto(photoData, eventSession.userName)
-        console.log('✅ Photo uploaded successfully!')
+        const eventContext = {
+          eventId: currentEvent.id,
+          eventCode: currentEvent.event_code
+        }
+        await uploadPhoto(photoData, eventSession.userName, eventContext)
+        console.log('✅ Photo uploaded successfully with event context!')
       } catch (error) {
         console.error('❌ Failed to upload photo:', error)
         // Photo is still counted even if upload fails
@@ -481,6 +485,8 @@ const MobileApp = () => {
             isUploading={isUploading}
             isAuthenticated={isAuthenticated}
             blobError={blobError}
+            eventStatus={currentEvent?.status}
+            eventTitle={currentEvent?.title}
           />
         )}
 

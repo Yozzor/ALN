@@ -19,7 +19,7 @@ export const useVercelBlob = () => {
   }, [])
 
   // Upload photo to Vercel Blob via backend API
-  const uploadPhoto = useCallback(async (photoData: PhotoData, userName: string) => {
+  const uploadPhoto = useCallback(async (photoData: PhotoData, userName: string, eventContext?: { eventId: string, eventCode: string }) => {
     setIsUploading(true)
     setUploadProgress(0)
     setError(null)
@@ -36,7 +36,9 @@ export const useVercelBlob = () => {
         photoData: base64Data,
         userName: userName,
         fileName: photoData.fileName,
-        timestamp: photoData.timestamp
+        timestamp: photoData.timestamp,
+        eventCode: eventContext?.eventCode,
+        eventId: eventContext?.eventId
       }
 
       setUploadProgress(50)
