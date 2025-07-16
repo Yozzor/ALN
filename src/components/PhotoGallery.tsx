@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { usePhotoSession } from '../hooks/usePhotoSession'
+import { getEventSession } from '../lib/eventUtils'
+import { supabase } from '../lib/supabase'
 
 interface Photo {
   url: string
@@ -56,14 +58,19 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const [observationTimer, setObservationTimer] = useState(0) // 3-second observation timer
   const [canVote, setCanVote] = useState(false) // Whether user can vote (after observation)
 
-  // Get user from URL params or session data
+  // Get user and event from URL params or session data
   const [searchParams] = useSearchParams()
   const urlUser = searchParams.get('user')
+  const urlEventCode = searchParams.get('event')
   const { userName: sessionUserName } = usePhotoSession()
   const activeUserName = currentUser || urlUser || sessionUserName
 
-  // Block access if no user name is available
-  if (!activeUserName) {
+  // Get event information
+  const eventSession = getEventSession()
+  const currentEventCode = urlEventCode || eventSession?.eventCode
+
+  // Block access if no user name or event is available
+  if (!activeUserName || !currentEventCode) {
     return (
       <div className="min-h-screen bg-surface-primary flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-surface-card rounded-2xl p-8 border border-border-primary shadow-premium text-center">
@@ -73,7 +80,10 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
             </div>
             <h2 className="text-xl font-semibold text-text-primary mb-2">Access Restricted</h2>
             <p className="text-text-secondary">
-              You need to set your name first to access the gallery.
+              {!activeUserName
+                ? "You need to join an event first to access the gallery."
+                : "No event information found. Please join an event first."
+              }
             </p>
           </div>
           <a
@@ -82,8 +92,8 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
                        text-white px-6 py-3 rounded-xl font-medium tracking-wide transition-all duration-300
                        hover:shadow-lg hover:-translate-y-0.5 inline-flex items-center gap-2"
           >
-            <span className="text-lg">👤</span>
-            Set Your Name
+            <span className="text-lg">🏠</span>
+            Join an Event
           </a>
         </div>
       </div>
@@ -91,8 +101,10 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   }
 
   useEffect(() => {
-    fetchPhotos()
-  }, [showAllUsers, activeUserName])
+    if (currentEventCode) {
+      fetchPhotos()
+    }
+  }, [showAllUsers, activeUserName, currentEventCode])
 
   // Initialize with first random photo when photos are loaded
   useEffect(() => {
@@ -336,22 +348,62 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       setLoading(true)
       setError(null)
 
-      // Use existing Vercel Blob API for now
-      const response = await fetch('/api/photos')
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch photos: ${response.status}`)
+      if (!currentEventCode) {
+        setError('No event selected')
+        return
       }
 
-      const result = await response.json()
-      let allPhotos = result.photos || []
+      console.log(`📸 Fetching photos for event: ${currentEventCode}`)
 
-      // Filter photos by current user unless showing all users
+      // First, get the event ID from the event code
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('id')
+        .eq('event_code', currentEventCode)
+        .single()
+
+      if (eventError || !eventData) {
+        console.error('Event not found:', eventError)
+        setError('Event not found')
+        return
+      }
+
+      // Then fetch photos for this event from Supabase
+      let query = supabase
+        .from('event_photos')
+        .select(`
+          id,
+          photo_url,
+          file_name,
+          uploaded_at,
+          event_participants!inner(user_name)
+        `)
+        .eq('event_id', eventData.id)
+
+      // Filter by user if not showing all users
       if (!showAllUsers && activeUserName) {
-        allPhotos = allPhotos.filter((photo: Photo) => photo.userName === activeUserName)
+        query = query.eq('event_participants.user_name', activeUserName)
       }
 
-      setPhotos(allPhotos)
+      const { data: photosData, error: photosError } = await query
+
+      if (photosError) {
+        console.error('Error fetching photos:', photosError)
+        setError('Failed to load photos from event')
+        return
+      }
+
+      // Transform Supabase data to match our Photo interface
+      const transformedPhotos: Photo[] = (photosData || []).map((photo: any) => ({
+        url: photo.photo_url,
+        fileName: photo.file_name,
+        size: 0, // We don't store size in Supabase yet
+        uploadedAt: photo.uploaded_at,
+        userName: photo.event_participants.user_name
+      }))
+
+      console.log(`📸 Found ${transformedPhotos.length} photos for event ${currentEventCode}`)
+      setPhotos(transformedPhotos)
     } catch (err) {
       console.error('Error fetching photos:', err)
       setError(err instanceof Error ? err.message : 'Failed to load photos')
@@ -413,16 +465,19 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
           {/* Title and Photo Count - Top Section */}
           <div className="text-center mb-4 animate-slide-up">
             <h1 className="text-text-primary font-light text-2xl sm:text-3xl mb-2 tracking-wide">
-              Photo Gallery
+              Event Gallery
             </h1>
-            <p className="text-text-tertiary text-sm font-light">
-              {showAllUsers
-                ? `${photos.length} photos from all users`
-                : activeUserName
-                  ? `${photos.length} photos by ${activeUserName}`
-                  : `${photos.length} photos uploaded`
-              }
-            </p>
+            <div className="text-text-tertiary text-sm font-light space-y-1">
+              <p className="text-primary-400 font-medium">Event: {currentEventCode}</p>
+              <p>
+                {showAllUsers
+                  ? `${photos.length} photos from all participants`
+                  : activeUserName
+                    ? `${photos.length} photos by ${activeUserName}`
+                    : `${photos.length} photos uploaded`
+                }
+              </p>
+            </div>
           </div>
 
           {/* Control Panel - Below Title */}
