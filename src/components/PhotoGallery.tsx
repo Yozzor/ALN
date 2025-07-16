@@ -60,6 +60,11 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   const [eventData, setEventData] = useState<any>(null)
   const [showStartConfirmation, setShowStartConfirmation] = useState(false)
 
+  // Real-time countdown state
+  const [timeRemaining, setTimeRemaining] = useState<number>(0) // seconds remaining
+  const [countdownActive, setCountdownActive] = useState(false)
+  const [showEventStartNotification, setShowEventStartNotification] = useState(false)
+
   // Get user and event from URL params or session data
   const [searchParams] = useSearchParams()
   const urlUser = searchParams.get('user')
@@ -74,6 +79,21 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
   // Generate user-specific voting key
   const getUserVotingKey = (eventCode: string, userName: string): string => {
     return `aln-voted-photos-${eventCode}-${userName.toLowerCase().replace(/[^a-z0-9]/g, '')}`
+  }
+
+  // Format time remaining for display
+  const formatTimeRemaining = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`
+    } else {
+      return `${secs}s`
+    }
   }
 
   // Load user-specific voted photos
@@ -122,6 +142,12 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     if (currentEventCode) {
       fetchPhotos()
       fetchEventData()
+      setupRealtimeSubscription()
+    }
+
+    return () => {
+      // Cleanup subscription on unmount
+      supabase.removeAllChannels()
     }
   }, [showAllUsers, activeUserName, currentEventCode])
 
@@ -142,6 +168,24 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       startObservationTimer()
     }
   }, [currentVotingPhoto])
+
+  // Countdown timer effect - updates every second when active
+  useEffect(() => {
+    if (!countdownActive || timeRemaining <= 0) return
+
+    const timer = setInterval(() => {
+      setTimeRemaining(prev => {
+        const newTime = prev - 1
+        if (newTime <= 0) {
+          setCountdownActive(false)
+          // Event will be ended by calculateTimeRemaining function
+        }
+        return Math.max(0, newTime)
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [countdownActive, timeRemaining])
 
   // Get random photo for voting (excluding already voted photos)
   const getRandomVotingPhoto = (excludeUrls?: Set<string>) => {
@@ -302,11 +346,43 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
       setEventState('countdown')
       setShowStartConfirmation(false)
 
-      // TODO: Add notification to all users that event has started
+      // Calculate initial time remaining
+      calculateTimeRemaining({
+        countdown_start_time: countdownStartTime,
+        duration_minutes: eventData.duration_minutes,
+        event_state: 'countdown'
+      })
 
     } catch (error) {
       console.error('❌ Error starting event:', error)
       alert('Failed to start event. Please try again.')
+    }
+  }
+
+  // End the event when countdown finishes
+  const endEvent = async (eventId: string) => {
+    try {
+      console.log('🏁 Ending event...')
+
+      const { error } = await supabase
+        .from('events')
+        .update({
+          event_state: 'ended',
+          event_ended_at: new Date().toISOString()
+        })
+        .eq('id', eventId)
+
+      if (error) {
+        console.error('❌ Failed to end event:', error)
+        return
+      }
+
+      console.log('✅ Event ended successfully!')
+      setEventState('ended')
+      setCountdownActive(false)
+
+    } catch (error) {
+      console.error('❌ Error ending event:', error)
     }
   }
 
@@ -409,6 +485,76 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
     } catch (error) {
       console.error('Failed to download photo:', error)
       alert('Failed to download photo. Please try again.')
+    }
+  }
+
+  // Setup real-time subscription for event updates
+  const setupRealtimeSubscription = () => {
+    if (!currentEventCode) return
+
+    console.log(`🔄 Setting up realtime subscription for event: ${currentEventCode}`)
+
+    const channel = supabase
+      .channel(`event-${currentEventCode}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'events',
+          filter: `event_code=eq.${currentEventCode}`
+        },
+        (payload) => {
+          console.log('🔄 Event update received:', payload)
+          handleEventUpdate(payload.new)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }
+
+  // Handle real-time event updates
+  const handleEventUpdate = (updatedEvent: any) => {
+    console.log('📡 Processing event update:', updatedEvent)
+
+    setEventData(updatedEvent)
+    setEventState(updatedEvent.event_state || 'not_started')
+
+    // If event just started, show notification to all users
+    if (updatedEvent.event_state === 'countdown' && eventState !== 'countdown') {
+      setShowEventStartNotification(true)
+      setTimeout(() => setShowEventStartNotification(false), 5000) // Hide after 5 seconds
+    }
+
+    // Calculate time remaining if countdown is active
+    if (updatedEvent.event_state === 'countdown' && updatedEvent.countdown_start_time) {
+      calculateTimeRemaining(updatedEvent)
+    }
+  }
+
+  // Calculate remaining time for countdown
+  const calculateTimeRemaining = (event: any) => {
+    if (!event.countdown_start_time || !event.duration_minutes) return
+
+    const startTime = new Date(event.countdown_start_time).getTime()
+    const durationMs = event.duration_minutes * 60 * 1000 // Convert minutes to milliseconds
+    const endTime = startTime + durationMs
+    const now = Date.now()
+
+    const remaining = Math.max(0, endTime - now)
+    const remainingSeconds = Math.floor(remaining / 1000)
+
+    setTimeRemaining(remainingSeconds)
+    setCountdownActive(remainingSeconds > 0)
+
+    console.log(`⏰ Time remaining: ${remainingSeconds} seconds`)
+
+    // If time is up, mark event as ended
+    if (remainingSeconds <= 0 && event.event_state === 'countdown') {
+      endEvent(event.id)
     }
   }
 
@@ -570,6 +716,32 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
             <h1 className="text-text-primary font-light text-2xl sm:text-3xl mb-2 tracking-wide">
               Event Gallery
             </h1>
+
+            {/* Event State and Countdown Display */}
+            {eventState === 'countdown' && countdownActive && (
+              <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 border border-green-500/30 rounded-xl p-4 mb-4 animate-pulse">
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-2xl">⏰</span>
+                  <div>
+                    <p className="text-green-400 font-semibold text-lg">Event Active!</p>
+                    <p className="text-text-secondary">Time remaining: <span className="text-white font-mono">{formatTimeRemaining(timeRemaining)}</span></p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {eventState === 'ended' && (
+              <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-xl p-4 mb-4">
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-2xl">🏆</span>
+                  <div>
+                    <p className="text-purple-400 font-semibold text-lg">Event Completed!</p>
+                    <p className="text-text-secondary">Check out the awards ceremony!</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="text-text-tertiary text-sm font-light space-y-1">
               <p className="text-primary-400 font-medium">Event: {currentEventCode}</p>
               <p>
@@ -1151,6 +1323,21 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
               >
                 Start Now! 🎉
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Event Starting Soon Notification */}
+      {showEventStartNotification && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[200] animate-slide-down">
+          <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white px-6 py-4 rounded-xl shadow-xl border border-white/20">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl animate-bounce">🚀</span>
+              <div>
+                <p className="font-semibold">Event Started!</p>
+                <p className="text-sm opacity-90">The countdown has begun! Start uploading and voting!</p>
+              </div>
             </div>
           </div>
         </div>
