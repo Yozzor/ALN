@@ -30,13 +30,6 @@ const getUserPhotoSessionKey = (eventCode: string, userName: string): string => 
 export const usePhotoSession = () => {
   const [sessionData, setSessionData] = useState<SessionData | null>(null)
   const [currentStorageKey, setCurrentStorageKey] = useState<string | null>(null)
-  const [debugLogs, setDebugLogs] = useState<string[]>([])
-
-  // Add debug log function
-  const addDebugLog = (message: string) => {
-    console.log(message)
-    setDebugLogs(prev => [...prev.slice(-10), `${new Date().toLocaleTimeString()}: ${message}`]) // Keep last 10 logs
-  }
 
   // Sync photo count with database
   const syncWithDatabase = async (eventSession: any): Promise<number> => {
@@ -154,32 +147,18 @@ export const usePhotoSession = () => {
     const storageKey = getUserPhotoSessionKey(eventSession.eventCode, userName.trim())
     setCurrentStorageKey(storageKey)
 
-    // DEBUG: Log all localStorage keys to see what's stored
-    addDebugLog('🔍 All localStorage keys:')
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key && key.includes('aln-')) {
-        addDebugLog(`  ${key}: ${localStorage.getItem(key)?.substring(0, 50)}...`)
-      }
-    }
-    addDebugLog(`🔍 Looking for session: ${storageKey}`)
-
     // Check if there's an existing session for this user in this event
     const existingSessionData = localStorage.getItem(storageKey)
-    addDebugLog(`🔍 Existing session: ${existingSessionData ? 'FOUND' : 'NOT FOUND'}`)
-    if (existingSessionData) {
-      addDebugLog(`🔍 Session data: ${existingSessionData.substring(0, 100)}...`)
-    }
+    console.log(`🔍 Looking for existing session: ${existingSessionData ? 'FOUND' : 'NOT FOUND'}`)
 
-    // SIMPLIFIED APPROACH: Always sync with database and create session based on DB truth
+    // ALWAYS sync with database and create session based on DB truth
     const photosTakenFromDB = await syncWithDatabase(eventSession)
     const maxPhotos = DEFAULT_MAX_PHOTOS
     const photosRemaining = Math.max(0, maxPhotos - photosTakenFromDB)
 
-    addDebugLog(`📊 DB shows: ${photosTakenFromDB} taken, ${photosRemaining} remaining`)
+    console.log(`📊 Database shows: ${photosTakenFromDB} taken, ${photosRemaining} remaining`)
 
-    // Always create a fresh session but with database-accurate counts
-    // This ensures we never have stale localStorage data affecting the count
+    // Always create session with database-accurate counts
     const sessionToUse: SessionData = {
       sessionId: existingSessionData ? JSON.parse(existingSessionData).sessionId : uuidv4(), // Keep same ID if exists
       userName: userName.trim(),
@@ -190,11 +169,7 @@ export const usePhotoSession = () => {
       maxPhotos: maxPhotos
     }
 
-    if (existingSessionData) {
-      addDebugLog(`🔄 RESTORED session with DB counts: ${photosRemaining} remaining`)
-    } else {
-      addDebugLog(`🆕 NEW session with DB counts: ${photosRemaining} remaining`)
-    }
+    console.log(`${existingSessionData ? '🔄 RESTORED' : '🆕 CREATED'} session with ${photosRemaining} photos remaining`)
 
     setSessionData(sessionToUse)
     return true
@@ -264,9 +239,6 @@ export const usePhotoSession = () => {
     takePhoto,
     resetSession,
     clearSessionForNewEvent,
-    getSessionStats,
-
-    // Debug
-    debugLogs
+    getSessionStats
   }
 }

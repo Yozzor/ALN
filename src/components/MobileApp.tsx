@@ -123,10 +123,8 @@ const MobileApp = () => {
                   // Always go to camera first - let the photo session logic handle gameOver
                   setAppState('camera')
                 } else {
-                  // Session failed, clear and start fresh
-                  console.log('❌ Photo session failed to start')
-                  clearEventSession()
-                  setEventSession(null)
+                  // Session failed, DON'T clear event session - just retry
+                  console.log('❌ Photo session failed to start - retrying without clearing session')
                   setAppState('lobby')
                 }
               } else {
@@ -137,8 +135,7 @@ const MobileApp = () => {
               }
             } catch (error) {
               console.error('Error validating saved session:', error)
-              clearEventSession()
-              setEventSession(null)
+              // DON'T clear session on validation error - just go to lobby
               setAppState('lobby')
             }
           }

@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useCamera } from '../hooks/useCamera'
-import { usePhotoSession } from '../hooks/usePhotoSession'
 import PolaroidPhoto from './PolaroidPhoto'
-import DebugDisplay from './DebugDisplay'
 
 interface CameraInterfaceProps {
   userName: string
@@ -29,9 +27,6 @@ const CameraInterface = ({
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
   const [polaroidBlob, setPolaroidBlob] = useState<Blob | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
-
-  // Get debug logs from photo session
-  const { debugLogs } = usePhotoSession()
   
   const {
     videoRef,
@@ -217,19 +212,7 @@ const CameraInterface = ({
               className="w-full h-full object-cover"
             />
 
-            {/* HUGE PHOTO COUNTER - IMPOSSIBLE TO MISS */}
-            <div className="absolute top-6 left-6 right-6 z-10">
-              <div className="bg-red-600 border-4 border-yellow-400 rounded-xl p-4 text-center">
-                <div className="text-yellow-300 text-2xl font-bold mb-2">
-                  🚨 PHOTOS LEFT: {photosRemaining} 🚨
-                </div>
-                <div className="text-white text-sm">
-                  This should NEVER reset when you go back!
-                </div>
-              </div>
-            </div>
-
-            {/* Original Photo Counter - Top Right */}
+            {/* Photo Counter - Top Right */}
             <div className="absolute top-6 right-6 z-10">
               <div className={`backdrop-blur-md rounded-xl px-4 py-3 border shadow-premium ${
                 photosRemaining <= 3
@@ -401,8 +384,7 @@ const CameraInterface = ({
       {/* Hidden canvas for photo capture */}
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* Debug Display */}
-      <DebugDisplay logs={debugLogs} photosRemaining={photosRemaining} />
+
 
     </div>
   )
