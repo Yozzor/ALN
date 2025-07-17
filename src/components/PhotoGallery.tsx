@@ -1139,14 +1139,14 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
             </div>
           )}
 
-          {/* Back Link */}
+          {/* Back Link - FIXED: Direct navigation instead of history.back() */}
           <div className="text-center mt-3">
-            <button
-              onClick={() => window.history.back()}
-              className="text-primary-400 text-sm"
+            <a
+              href="/"
+              className="text-primary-400 text-sm hover:text-primary-300 transition-colors"
             >
               ← Back to Camera
-            </button>
+            </a>
           </div>
 
         </div>
