@@ -147,8 +147,22 @@ export const usePhotoSession = () => {
     const storageKey = getUserPhotoSessionKey(eventSession.eventCode, userName.trim())
     setCurrentStorageKey(storageKey)
 
+    // DEBUG: Log all localStorage keys to see what's stored
+    console.log('🔍 DEBUG: All localStorage keys:')
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.includes('aln-')) {
+        console.log(`  ${key}: ${localStorage.getItem(key)?.substring(0, 100)}...`)
+      }
+    }
+    console.log(`🔍 DEBUG: Looking for photo session with key: ${storageKey}`)
+
     // Check if there's an existing session for this user in this event
     const existingSessionData = localStorage.getItem(storageKey)
+    console.log(`🔍 DEBUG: Existing session data found: ${existingSessionData ? 'YES' : 'NO'}`)
+    if (existingSessionData) {
+      console.log(`🔍 DEBUG: Existing session data: ${existingSessionData.substring(0, 200)}...`)
+    }
 
     // Sync with database to get actual photo count
     const photosTakenFromDB = await syncWithDatabase(eventSession)
@@ -161,12 +175,15 @@ export const usePhotoSession = () => {
       // Restore existing session but update photo counts from database
       try {
         const existingSession = JSON.parse(existingSessionData) as SessionData
+        console.log(`🔍 DEBUG: Parsed existing session:`, existingSession)
         sessionToUse = {
           ...existingSession,
           photosRemaining: photosRemaining, // Update from database
           maxPhotos: maxPhotos
         }
-        console.log(`🔄 Restored existing photo session for ${userName.trim()} in event ${eventSession.eventCode} (${photosTakenFromDB} photos taken, ${photosRemaining} remaining)`)
+        console.log(`🔄 ✅ RESTORED existing photo session for ${userName.trim()} in event ${eventSession.eventCode}`)
+        console.log(`🔄 ✅ Session ID: ${sessionToUse.sessionId}`)
+        console.log(`🔄 ✅ Photos from DB: ${photosTakenFromDB}, Remaining: ${photosRemaining}`)
       } catch (error) {
         console.error('❌ Failed to parse existing session, creating new one:', error)
         sessionToUse = {
@@ -178,6 +195,7 @@ export const usePhotoSession = () => {
           eventId: eventSession.eventId,
           maxPhotos: maxPhotos
         }
+        console.log(`📸 ❌ FALLBACK: Created new session due to parse error`)
       }
     } else {
       // Create new session
@@ -190,7 +208,9 @@ export const usePhotoSession = () => {
         eventId: eventSession.eventId,
         maxPhotos: maxPhotos
       }
-      console.log(`📸 Created new photo session for ${userName.trim()} in event ${eventSession.eventCode} (${photosTakenFromDB} photos taken, ${photosRemaining} remaining)`)
+      console.log(`📸 🆕 CREATED NEW photo session for ${userName.trim()} in event ${eventSession.eventCode}`)
+      console.log(`📸 🆕 Session ID: ${sessionToUse.sessionId}`)
+      console.log(`📸 🆕 Photos from DB: ${photosTakenFromDB}, Remaining: ${photosRemaining}`)
     }
 
     setSessionData(sessionToUse)
