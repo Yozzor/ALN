@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useCamera } from '../hooks/useCamera'
+import { usePhotoSession } from '../hooks/usePhotoSession'
 import PolaroidPhoto from './PolaroidPhoto'
+import DebugDisplay from './DebugDisplay'
 
 interface CameraInterfaceProps {
   userName: string
@@ -27,6 +29,9 @@ const CameraInterface = ({
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
   const [polaroidBlob, setPolaroidBlob] = useState<Blob | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+
+  // Get debug logs from photo session
+  const { debugLogs } = usePhotoSession()
   
   const {
     videoRef,
@@ -384,6 +389,8 @@ const CameraInterface = ({
       {/* Hidden canvas for photo capture */}
       <canvas ref={canvasRef} className="hidden" />
 
+      {/* Debug Display */}
+      <DebugDisplay logs={debugLogs} photosRemaining={photosRemaining} />
 
     </div>
   )
