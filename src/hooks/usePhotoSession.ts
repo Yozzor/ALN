@@ -147,23 +147,53 @@ export const usePhotoSession = () => {
     const storageKey = getUserPhotoSessionKey(eventSession.eventCode, userName.trim())
     setCurrentStorageKey(storageKey)
 
+    // Check if there's an existing session for this user in this event
+    const existingSessionData = localStorage.getItem(storageKey)
+
     // Sync with database to get actual photo count
     const photosTakenFromDB = await syncWithDatabase(eventSession)
     const maxPhotos = DEFAULT_MAX_PHOTOS
     const photosRemaining = Math.max(0, maxPhotos - photosTakenFromDB)
 
-    const newSession: SessionData = {
-      sessionId: uuidv4(),
-      userName: userName.trim(),
-      photosRemaining: photosRemaining,
-      photosTaken: [], // We don't store actual photo data for existing photos
-      createdAt: Date.now(),
-      eventId: eventSession.eventId,
-      maxPhotos: maxPhotos
+    let sessionToUse: SessionData
+
+    if (existingSessionData) {
+      // Restore existing session but update photo counts from database
+      try {
+        const existingSession = JSON.parse(existingSessionData) as SessionData
+        sessionToUse = {
+          ...existingSession,
+          photosRemaining: photosRemaining, // Update from database
+          maxPhotos: maxPhotos
+        }
+        console.log(`🔄 Restored existing photo session for ${userName.trim()} in event ${eventSession.eventCode} (${photosTakenFromDB} photos taken, ${photosRemaining} remaining)`)
+      } catch (error) {
+        console.error('❌ Failed to parse existing session, creating new one:', error)
+        sessionToUse = {
+          sessionId: uuidv4(),
+          userName: userName.trim(),
+          photosRemaining: photosRemaining,
+          photosTaken: [], // We don't store actual photo data for existing photos
+          createdAt: Date.now(),
+          eventId: eventSession.eventId,
+          maxPhotos: maxPhotos
+        }
+      }
+    } else {
+      // Create new session
+      sessionToUse = {
+        sessionId: uuidv4(),
+        userName: userName.trim(),
+        photosRemaining: photosRemaining,
+        photosTaken: [], // We don't store actual photo data for existing photos
+        createdAt: Date.now(),
+        eventId: eventSession.eventId,
+        maxPhotos: maxPhotos
+      }
+      console.log(`📸 Created new photo session for ${userName.trim()} in event ${eventSession.eventCode} (${photosTakenFromDB} photos taken, ${photosRemaining} remaining)`)
     }
 
-    console.log(`📸 Starting photo session for ${userName.trim()} in event ${eventSession.eventCode} (${photosTakenFromDB} photos taken, ${photosRemaining} remaining)`)
-    setSessionData(newSession)
+    setSessionData(sessionToUse)
     return true
   }
 
