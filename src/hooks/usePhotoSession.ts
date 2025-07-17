@@ -121,11 +121,15 @@ export const usePhotoSession = () => {
     initializeSession()
   }, [])
 
-  // Save session to localStorage whenever it changes
+  // Save session to BOTH localStorage AND sessionStorage for maximum persistence
   useEffect(() => {
     if (sessionData && currentStorageKey) {
-      localStorage.setItem(currentStorageKey, JSON.stringify(sessionData))
-      console.log(`💾 Saved photo session for ${sessionData.userName} in event ${sessionData.eventId}`)
+      const sessionJson = JSON.stringify(sessionData)
+      // Save to localStorage for long-term persistence
+      localStorage.setItem(currentStorageKey, sessionJson)
+      // ALSO save to sessionStorage for browser navigation persistence
+      sessionStorage.setItem(currentStorageKey, sessionJson)
+      console.log(`💾 Saved photo session to BOTH storages for ${sessionData.userName} in event ${sessionData.eventId}`)
     }
   }, [sessionData, currentStorageKey])
 
@@ -147,9 +151,14 @@ export const usePhotoSession = () => {
     const storageKey = getUserPhotoSessionKey(eventSession.eventCode, userName.trim())
     setCurrentStorageKey(storageKey)
 
-    // Check if there's an existing session for this user in this event
-    const existingSessionData = localStorage.getItem(storageKey)
-    console.log(`🔍 Looking for existing session: ${existingSessionData ? 'FOUND' : 'NOT FOUND'}`)
+    // Check BOTH sessionStorage AND localStorage for existing session (sessionStorage first for browser navigation)
+    let existingSessionData = sessionStorage.getItem(storageKey)
+    if (!existingSessionData) {
+      existingSessionData = localStorage.getItem(storageKey)
+      console.log(`🔍 Checking localStorage for session: ${existingSessionData ? 'FOUND' : 'NOT FOUND'}`)
+    } else {
+      console.log(`🔍 Found session in sessionStorage: FOUND`)
+    }
 
     // ALWAYS sync with database and create session based on DB truth
     const photosTakenFromDB = await syncWithDatabase(eventSession)
@@ -159,17 +168,46 @@ export const usePhotoSession = () => {
     console.log(`📊 Database shows: ${photosTakenFromDB} taken, ${photosRemaining} remaining`)
 
     // Always create session with database-accurate counts
-    const sessionToUse: SessionData = {
-      sessionId: existingSessionData ? JSON.parse(existingSessionData).sessionId : uuidv4(), // Keep same ID if exists
-      userName: userName.trim(),
-      photosRemaining: photosRemaining, // ALWAYS from database
-      photosTaken: [], // We don't store actual photo data locally
-      createdAt: existingSessionData ? JSON.parse(existingSessionData).createdAt : Date.now(), // Keep original creation time
-      eventId: eventSession.eventId,
-      maxPhotos: maxPhotos
-    }
+    let sessionToUse: SessionData
 
-    console.log(`${existingSessionData ? '🔄 RESTORED' : '🆕 CREATED'} session with ${photosRemaining} photos remaining`)
+    if (existingSessionData) {
+      try {
+        const parsedSession = JSON.parse(existingSessionData)
+        sessionToUse = {
+          sessionId: parsedSession.sessionId, // Keep same ID
+          userName: userName.trim(),
+          photosRemaining: photosRemaining, // ALWAYS from database
+          photosTaken: [], // We don't store actual photo data locally
+          createdAt: parsedSession.createdAt, // Keep original creation time
+          eventId: eventSession.eventId,
+          maxPhotos: maxPhotos
+        }
+        console.log(`🔄 RESTORED session with ${photosRemaining} photos remaining`)
+      } catch (error) {
+        console.error('❌ Failed to parse existing session, creating new one:', error)
+        sessionToUse = {
+          sessionId: uuidv4(),
+          userName: userName.trim(),
+          photosRemaining: photosRemaining,
+          photosTaken: [],
+          createdAt: Date.now(),
+          eventId: eventSession.eventId,
+          maxPhotos: maxPhotos
+        }
+        console.log(`🆕 CREATED new session due to parse error with ${photosRemaining} photos remaining`)
+      }
+    } else {
+      sessionToUse = {
+        sessionId: uuidv4(),
+        userName: userName.trim(),
+        photosRemaining: photosRemaining,
+        photosTaken: [],
+        createdAt: Date.now(),
+        eventId: eventSession.eventId,
+        maxPhotos: maxPhotos
+      }
+      console.log(`🆕 CREATED new session with ${photosRemaining} photos remaining`)
+    }
 
     setSessionData(sessionToUse)
     return true
