@@ -989,8 +989,8 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
 
   return (
     <div className="min-h-screen bg-surface-primary relative overflow-hidden">
-      {/* Background gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-surface-primary via-surface-secondary to-surface-tertiary opacity-80"></div>
+      {/* Background gradient overlay - FIXED: pointer-events-none to prevent blocking */}
+      <div className="absolute inset-0 bg-gradient-to-br from-surface-primary via-surface-secondary to-surface-tertiary opacity-80 pointer-events-none"></div>
 
       {/* Ambient lighting effects */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
@@ -1008,8 +1008,8 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
         </div>
       )}
 
-      {/* SUPER SIMPLE MOBILE HEADER - NO COMPLEX LAYOUTS */}
-      <div className="bg-surface-primary border-b border-border-primary/30 p-4">
+      {/* SUPER SIMPLE MOBILE HEADER - NO COMPLEX LAYOUTS - FIXED: Higher z-index */}
+      <div className="bg-surface-primary border-b border-border-primary/30 p-4 relative z-50">
         <div className="w-full">
 
           {/* Title - Simple and Centered */}
@@ -1152,8 +1152,8 @@ const PhotoGallery = ({ currentUser }: PhotoGalleryProps) => {
         </div>
       </div>
 
-      {/* Photos Grid */}
-      <div className="relative z-10 max-w-6xl mx-auto p-6">
+      {/* Photos Grid - FIXED: Higher z-index */}
+      <div className="relative z-40 max-w-6xl mx-auto p-6">
         {photos.length === 0 ? (
           <div className="text-center py-20 animate-fade-in">
             {/* Enhanced Camera Icon */}
