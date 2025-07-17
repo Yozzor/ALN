@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { supabase, type Event } from '../lib/supabase'
-import { updateEventStatus } from '../lib/eventUtils'
 
 interface EventParticipant {
   id: string
